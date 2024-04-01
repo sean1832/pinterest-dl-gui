@@ -41,8 +41,8 @@ def scraping_section():
     with col1:
         browser = st.selectbox("Web Driver", ["Chrome", "Firefox"])
     with col2:
-        incognito = st.checkbox("Incognito", False)
-        headless = st.checkbox("Headless", True)
+        incognito = st.toggle("Incognito", False)
+        headless = st.toggle("Headless", True)
     threshold = st.slider("Scroll Number", 0, 100, 10, step=2)
     persistence = st.slider("Persistence", 10, 500, 120, step=10)
     return incognito, headless, browser, threshold, persistence
@@ -98,19 +98,20 @@ def main():
     msg = st.empty()
     with col1:
         if st.button("Scrape", type="primary"):
-            scrape_images(
-                url,
-                project_name,
-                project_dir,
-                res_x,
-                res_y,
-                incognito,
-                headless,
-                browser,
-                threshold,
-                persistence,
-                msg,
-            )
+            with st.spinner("Scraping..."):
+                scrape_images(
+                    url,
+                    project_name,
+                    project_dir,
+                    res_x,
+                    res_y,
+                    incognito,
+                    headless,
+                    browser,
+                    threshold,
+                    persistence,
+                    msg,
+                )
 
     with col2:
         if st.button("📂 Open Directory"):
