@@ -23,8 +23,8 @@ def setup_ui():
     project_name = st.text_input("Project Name", placeholder="Concept Art")
     with st.expander("Scrape Options"):
         res_x, res_y = quality_section()
-        incognito, headless, browser, threshold, persistence = scraping_section()
-    return url, project_name, res_x, res_y, incognito, headless, browser, threshold, persistence
+        incognito, headful, browser, threshold, timeout = scraping_section()
+    return url, project_name, res_x, res_y, incognito, headful, browser, threshold, timeout
 
 
 def quality_section():
@@ -42,10 +42,10 @@ def scraping_section():
         browser = st.selectbox("Web Driver", ["Chrome", "Firefox"])
     with col2:
         incognito = st.toggle("Incognito", False)
-        headless = st.toggle("Headless", True)
-    threshold = st.slider("Scroll Number", 0, 100, 10, step=2)
-    persistence = st.slider("Persistence", 10, 500, 120, step=10)
-    return incognito, headless, browser, threshold, persistence
+        headful = st.toggle("Headful", False)
+    limit = st.slider("Image Count", 0, 800, 100, step=5)
+    timeout = st.slider("Timeout (sec)", 0, 10, 3, step=1)
+    return incognito, headful, browser, limit, timeout
 
 
 # Logic
@@ -56,10 +56,10 @@ def scrape_images(
     res_x,
     res_y,
     incognito,
-    headless,
+    headful,
     browser,
-    threshold,
-    persistence,
+    limit,
+    timeout,
     msg,
 ):
     session_time = time.strftime("%Y%m%d%H%M%S")
@@ -76,23 +76,22 @@ def scrape_images(
 
     api.run_scrape(
         url,
-        threshold,
-        project_dir,
-        persistence=persistence,
-        write=cache_filename,
+        limit=limit,
+        output=project_dir,
+        timeout=timeout,
+        json=True,
+        json_path=cache_filename,
         firefox=(browser == "Firefox"),
         incognito=incognito,
-        verbose=True,
+        headful=headful,
         min_resolution=(res_x, res_y),
-        headless=headless,
     )
     msg.success("Scrape Complete!")
+    print("Done.")
 
 
 def main():
-    url, project_name, res_x, res_y, incognito, headless, browser, threshold, persistence = (
-        setup_ui()
-    )
+    url, project_name, res_x, res_y, incognito, headful, browser, threshold, timeout = setup_ui()
     project_dir = Path("downloads", project_name)
     col1, col2 = st.columns([0.5, 2])
     msg = st.empty()
@@ -106,10 +105,10 @@ def main():
                     res_x,
                     res_y,
                     incognito,
-                    headless,
+                    headful,
                     browser,
                     threshold,
-                    persistence,
+                    timeout,
                     msg,
                 )
 
