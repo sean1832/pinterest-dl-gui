@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 
 import streamlit as st
-from pinterest_dl import api
+from pinterest_dl import PinterestDL
 
 
 def disclaimer():
@@ -23,8 +23,8 @@ def setup_ui():
     project_name = st.text_input("Project Name", placeholder="Concept Art")
     with st.expander("Scrape Options"):
         res_x, res_y = quality_section()
-        incognito, headful, browser, threshold, timeout = scraping_section()
-    return url, project_name, res_x, res_y, incognito, headful, browser, threshold, timeout
+        threshold, timeout = scraping_section()
+    return url, project_name, res_x, res_y, threshold, timeout
 
 
 def quality_section():
@@ -37,15 +37,9 @@ def quality_section():
 
 
 def scraping_section():
-    col1, col2 = st.columns(2)
-    with col1:
-        browser = st.selectbox("Web Driver", ["Chrome", "Firefox"])
-    with col2:
-        incognito = st.toggle("Incognito", False)
-        headful = st.toggle("Headful", False)
     limit = st.slider("Image Count", 0, 800, 100, step=5)
-    timeout = st.slider("Timeout (sec)", 0, 10, 3, step=1)
-    return incognito, headful, browser, limit, timeout
+    timeout = st.slider("Timeout (sec)", 0, 30, 10, step=1)
+    return limit, timeout
 
 
 # Logic
@@ -55,9 +49,6 @@ def scrape_images(
     project_dir,
     res_x,
     res_y,
-    incognito,
-    headful,
-    browser,
     limit,
     timeout,
     msg,
@@ -74,24 +65,19 @@ def scrape_images(
     if project_dir.exists():
         msg.warning("Project already exists! Merge with existing data.")
 
-    api.run_scrape(
-        url,
+    PinterestDL.with_api(timeout=timeout).scrape_and_download(
+        url=url,
+        output_dir=project_dir,
         limit=limit,
-        output=project_dir,
-        timeout=timeout,
-        json=True,
-        json_path=cache_filename,
-        firefox=(browser == "Firefox"),
-        incognito=incognito,
-        headful=headful,
         min_resolution=(res_x, res_y),
+        json_output=cache_filename,
     )
     msg.success("Scrape Complete!")
     print("Done.")
 
 
 def main():
-    url, project_name, res_x, res_y, incognito, headful, browser, threshold, timeout = setup_ui()
+    url, project_name, res_x, res_y, threshold, timeout = setup_ui()
     project_dir = Path("downloads", project_name)
     col1, col2 = st.columns([0.5, 2])
     msg = st.empty()
@@ -104,9 +90,6 @@ def main():
                     project_dir,
                     res_x,
                     res_y,
-                    incognito,
-                    headful,
-                    browser,
                     threshold,
                     timeout,
                     msg,
