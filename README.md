@@ -41,5 +41,5 @@ streamlit run gui.py
 > [!TIP]
 > Subsequent runs after installation can be done by executing `gui.bat` even if you installed manually.
 
-## Grafical User Interface
+## Graphical User Interface
 ![alt text](image.png)
