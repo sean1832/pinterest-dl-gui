@@ -16,6 +16,11 @@ COOKIES_PATH = Path("cookies/cookies.json")
 COOKIES_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
+def init():
+    if "use_cookies" not in st.session_state:
+        st.session_state.use_cookies = False
+
+
 # ui
 def setup_ui():
     st.title(f"Pinterest DL {VERSION}")
@@ -44,11 +49,14 @@ def setup_ui():
 def cookies_section():
     col1, col2 = st.columns(2)
     with col1:
-        use_cookies = st.toggle("Use Cookies", value=False)
+        use_cookies = st.toggle("Use Cookies", value=st.session_state.use_cookies)
     with col2:
         if use_cookies:
+            st.session_state.use_cookies = True
             if st.button("Get Cookies"):
                 login_dialog()
+        else:
+            st.session_state.use_cookies = False
     if use_cookies and not COOKIES_PATH.exists():
         st.warning(f"No cookies found under path `./{COOKIES_PATH.as_posix()}`!")
 
@@ -146,13 +154,25 @@ def scrape_images(
     if project_dir.exists():
         msg.warning("Project already exists! Merge with existing data.")
 
-    PinterestDL.with_api(timeout=timeout).scrape_and_download(
-        url=url,
-        output_dir=project_dir,
-        limit=limit,
-        min_resolution=(res_x, res_y),
-        json_output=cache_filename,
-    )
+    if st.session_state.use_cookies:
+        if not COOKIES_PATH.exists():
+            msg.error("No cookies found!")
+            return
+        PinterestDL.with_api(timeout=timeout).with_cookies_path(COOKIES_PATH).scrape_and_download(
+            url=url,
+            output_dir=project_dir,
+            limit=limit,
+            min_resolution=(res_x, res_y),
+            json_output=cache_filename,
+        )
+    else:
+        PinterestDL.with_api(timeout=timeout).scrape_and_download(
+            url=url,
+            output_dir=project_dir,
+            limit=limit,
+            min_resolution=(res_x, res_y),
+            json_output=cache_filename,
+        )
     msg.success("Scrape Complete!")
     print("Done.")
 
@@ -179,13 +199,25 @@ def search_images(
     if project_dir.exists():
         msg.warning("Project already exists! Merge with existing data.")
 
-    PinterestDL.with_api(timeout=timeout).search_and_download(
-        query=query,
-        output_dir=project_dir,
-        limit=limit,
-        min_resolution=(res_x, res_y),
-        json_output=cache_filename,
-    )
+    if st.session_state.use_cookies:
+        if not COOKIES_PATH.exists():
+            msg.error("No cookies found!")
+            return
+        PinterestDL.with_api(timeout=timeout).with_cookies_path(COOKIES_PATH).search_and_download(
+            query=query,
+            output_dir=project_dir,
+            limit=limit,
+            min_resolution=(res_x, res_y),
+            json_output=cache_filename,
+        )
+    else:
+        PinterestDL.with_api(timeout=timeout).search_and_download(
+            query=query,
+            output_dir=project_dir,
+            limit=limit,
+            min_resolution=(res_x, res_y),
+            json_output=cache_filename,
+        )
     msg.success("Scrape Complete!")
     print("Done.")
 
@@ -232,4 +264,5 @@ def main():
 
 
 if __name__ == "__main__":
+    init()
     main()
