@@ -6,7 +6,7 @@ from pathlib import Path
 import streamlit as st
 from pinterest_dl import PinterestDL
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 MODE_OPTIONS = {
     "Board": ":material/web: Board",
