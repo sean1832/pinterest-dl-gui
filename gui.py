@@ -130,15 +130,50 @@ def scraping_section() -> tuple[float, float]:
 
 
 def footer():
-    st.markdown(
-        """
-        ---
-        Made with ❤️ by [Sean1832](https://github.com/Sean1832/pinterest-dl-gui)
-        """
-    )
-    st.html(
-        """<a href="https://www.buymeacoffee.com/zekezhang" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 145px !important;" ></a>"""
-    )
+    bg_color = "#262730"  # Dark background color
+    txt_color = "#FFF"  # Light text for dark theme
+    border_color = "#444"  # A subtle border color for dark mode
+
+    # Custom CSS using the theme-based variables
+    custom_css = f"""
+    <style>
+        /* Hide the default Streamlit footer */
+        footer {{ visibility: hidden; }}
+        .stApp {{ margin-bottom: 60px; }}  /* Ensure content isn't obscured */
+
+        /* Custom footer styling */
+        .custom-footer {{
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            background-color: {bg_color};
+            color: {txt_color};
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            border-top: 1px solid {border_color};
+            z-index: 100;
+        }}
+        .custom-footer a {{
+            color: {txt_color};
+            text-decoration: none;
+        }}
+        .custom-footer a:hover {{
+            text-decoration: underline;
+        }}
+    </style>
+    """
+
+    # Custom footer HTML content
+    custom_footer = """
+    <div class="custom-footer">
+        Made with ❤️ by <a href="https://github.com/Sean1832/pinterest-dl-gui" target="_blank">Sean1832</a>
+        | <a href="https://www.buymeacoffee.com/zekezhang" target="_blank">Buy me a coffee</a>
+    </div>
+    """
+
+    st.markdown(custom_css + custom_footer, unsafe_allow_html=True)
 
 
 # Logic
