@@ -1,5 +1,7 @@
 import json
 import os
+import platform
+import subprocess
 import time
 from pathlib import Path
 
@@ -7,13 +9,25 @@ import streamlit as st
 from pinterest_dl import PinterestDL
 
 # ========================== Configuration Section ==========================
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 MODE_OPTIONS = {
     "Board": ":material/web: Board",
     "Search": ":material/search: Search",
 }
 COOKIES_PATH = Path("cookies/cookies.json")
 COOKIES_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+
+# ========================== Util Section ==========================
+def open_directory(path):
+    if platform.system() == "Windows":
+        os.startfile(path)
+    elif platform.system() == "Darwin":  # macOS
+        subprocess.Popen(["open", path])
+    elif platform.system() == "Linux":  # Linux
+        subprocess.Popen(["xdg-open", path])
+    else:
+        raise OSError("Unsupported operating system")
 
 
 # ========================== UI Functions Section ==========================
@@ -310,7 +324,10 @@ def main():
 
     with col2:
         if st.button("📂 Open Directory"):
-            os.startfile(project_dir)
+            if project_dir.exists():
+                open_directory(project_dir)
+            else:
+                msg.warning("Project directory does not exist!")
 
     footer()
 
