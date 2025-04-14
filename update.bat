@@ -1,19 +1,48 @@
 @echo off
-REM Update from git repository. You need to have git installed.
+REM ======================================================
+REM Updated Script to Update Python Project from Git Repo
+REM ======================================================
+
 echo Updating from repository...
 
-FOR /F "tokens=*" %%i IN ('git pull') DO (
-    echo %%i
-    echo %%i | findstr /C:"Already up to date." >nul
-    IF NOT ERRORLEVEL 1 (
-        echo Exiting...
-        pause
-        exit /b
-    )
+REM Capture git pull output to a temporary file including errors
+git pull > gitpull.log 2>&1
+IF ERRORLEVEL 1 (
+    echo Error: Failed to pull changes. Check gitpull.log for details.
+    type gitpull.log
+    pause
+    exit /b
+)
+
+REM Check if repository is already up to date
+findstr /C:"Already up to date." gitpull.log >nul
+IF %ERRORLEVEL% EQU 0 (
+    echo Repository is already up to date. Exiting...
+    del gitpull.log
+    pause
+    exit /b
+)
+
+REM Clean up temporary file after successful update
+del gitpull.log
+echo Repository updated successfully.
+
+REM Check if the virtual environment activation script exists
+IF NOT EXIST venv\Scripts\activate.bat (
+    echo Error: Virtual environment not found at "venv\Scripts\activate.bat".
+    pause
+    exit /b
 )
 
 echo Initializing virtual environment...
 CALL venv\Scripts\activate.bat
+
+REM Verify existence of requirements.txt
+IF NOT EXIST requirements.txt (
+    echo Error: requirements.txt not found.
+    pause
+    exit /b
+)
 
 echo Installing dependencies from requirements.txt...
 pip install -r requirements.txt
