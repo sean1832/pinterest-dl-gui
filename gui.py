@@ -6,7 +6,7 @@ from pathlib import Path
 import streamlit as st
 from pinterest_dl import PinterestDL
 
-VERSION = "0.1.1"
+VERSION = "0.2.0"
 
 MODE_OPTIONS = {
     "Board": ":material/web: Board",
@@ -40,10 +40,10 @@ def setup_ui():
     project_name, image_num = project_section()
     with st.expander("Scrape Options"):
         res_x, res_y = quality_section()
-        timeout = scraping_section()
+        timeout, delay = scraping_section()
         cookies_section()
 
-    return query, project_name, res_x, res_y, image_num, timeout, mode
+    return query, project_name, res_x, res_y, image_num, timeout, delay, mode
 
 
 def cookies_section():
@@ -104,9 +104,10 @@ def quality_section():
     return res_x, res_y
 
 
-def scraping_section():
-    timeout = st.slider("Timeout (sec)", 0, 30, 10, step=1)
-    return timeout
+def scraping_section() -> tuple[float, float]:
+    timeout = st.slider("Timeout (sec)", 0.0, 30.0, 10.0, help="Timeout for each request")
+    delay = st.slider("Delay (sec)", 0.0, 2.0, 0.8, help="Delay between requests")
+    return timeout, delay
 
 
 def footer():
@@ -140,6 +141,7 @@ def scrape_images(
     res_y,
     limit,
     timeout,
+    delay,
     msg,
 ):
     session_time = time.strftime("%Y%m%d%H%M%S")
@@ -161,17 +163,19 @@ def scrape_images(
         PinterestDL.with_api(timeout=timeout).with_cookies_path(COOKIES_PATH).scrape_and_download(
             url=url,
             output_dir=project_dir,
-            limit=limit,
+            num=limit,
             min_resolution=(res_x, res_y),
-            json_output=cache_filename,
+            cache_path=cache_filename,
+            delay=delay,
         )
     else:
         PinterestDL.with_api(timeout=timeout).scrape_and_download(
             url=url,
             output_dir=project_dir,
-            limit=limit,
+            num=limit,
             min_resolution=(res_x, res_y),
-            json_output=cache_filename,
+            cache_path=cache_filename,
+            delay=delay,
         )
     msg.success("Scrape Complete!")
     print("Done.")
@@ -185,6 +189,7 @@ def search_images(
     res_y,
     limit,
     timeout,
+    delay,
     msg,
 ):
     session_time = time.strftime("%Y%m%d%H%M%S")
@@ -206,17 +211,19 @@ def search_images(
         PinterestDL.with_api(timeout=timeout).with_cookies_path(COOKIES_PATH).search_and_download(
             query=query,
             output_dir=project_dir,
-            limit=limit,
+            num=limit,
             min_resolution=(res_x, res_y),
-            json_output=cache_filename,
+            cache_path=cache_filename,
+            delay=delay,
         )
     else:
         PinterestDL.with_api(timeout=timeout).search_and_download(
             query=query,
             output_dir=project_dir,
-            limit=limit,
+            num=limit,
             min_resolution=(res_x, res_y),
-            json_output=cache_filename,
+            cache_path=cache_filename,
+            delay=delay,
         )
     msg.success("Scrape Complete!")
     print("Done.")
@@ -224,7 +231,7 @@ def search_images(
 
 def main():
     st.set_page_config(page_title="Pintereset DL")
-    query, project_name, res_x, res_y, threshold, timeout, mode = setup_ui()
+    query, project_name, res_x, res_y, threshold, timeout, delay, mode = setup_ui()
     project_dir = Path("downloads", project_name)
     col1, col2 = st.columns([0.5, 2])
     msg = st.empty()
@@ -240,6 +247,7 @@ def main():
                         res_y,
                         threshold,
                         timeout,
+                        delay,
                         msg,
                     )
                 elif mode == MODE_OPTIONS["Search"]:
@@ -251,6 +259,7 @@ def main():
                         res_y,
                         threshold,
                         timeout,
+                        delay,
                         msg,
                     )
                 else:

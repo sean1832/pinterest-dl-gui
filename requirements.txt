@@ -1,2 +1,2 @@
-pinterest-dl==0.3.5
+pinterest-dl==0.5.0
 streamlit>=1.41.1
