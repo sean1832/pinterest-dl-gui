@@ -19,6 +19,8 @@ COOKIES_PATH.parent.mkdir(parents=True, exist_ok=True)
 def init():
     if "use_cookies" not in st.session_state:
         st.session_state.use_cookies = False
+    if "remove_no_cap" not in st.session_state:
+        st.session_state.remove_no_cap = False
 
 
 # ui
@@ -41,9 +43,10 @@ def setup_ui():
     with st.expander("Scrape Options"):
         res_x, res_y = quality_section()
         timeout, delay = scraping_section()
+        caption_type = caption_selection()
         cookies_section()
 
-    return query, project_name, res_x, res_y, image_num, timeout, delay, mode
+    return query, project_name, res_x, res_y, image_num, timeout, delay, mode, caption_type
 
 
 def cookies_section():
@@ -59,6 +62,22 @@ def cookies_section():
             st.session_state.use_cookies = False
     if use_cookies and not COOKIES_PATH.exists():
         st.warning(f"No cookies found under path `./{COOKIES_PATH.as_posix()}`!")
+
+
+def caption_selection():
+    caption_type = st.selectbox(
+        "Caption Type",
+        ["none", "txt", "json", "metadata"],
+        index=0,
+    )
+    remove_no_cap = st.toggle(
+        "Remove No Caption",
+        value=False,
+        help="Remove images without captions from the final output. (Set `Caption Type` other than `none` to enable)",
+        disabled=caption_type == "none",
+    )
+    st.session_state.remove_no_cap = remove_no_cap
+    return caption_type
 
 
 @st.dialog("Pinterest Login")
@@ -143,6 +162,7 @@ def scrape_images(
     timeout,
     delay,
     msg,
+    caption,
 ):
     session_time = time.strftime("%Y%m%d%H%M%S")
     cache_path = Path("downloads", "_cache")
@@ -167,6 +187,8 @@ def scrape_images(
             min_resolution=(res_x, res_y),
             cache_path=cache_filename,
             delay=delay,
+            remove_no_alt=st.session_state.remove_no_cap,
+            caption=caption,
         )
     else:
         PinterestDL.with_api(timeout=timeout).scrape_and_download(
@@ -176,21 +198,15 @@ def scrape_images(
             min_resolution=(res_x, res_y),
             cache_path=cache_filename,
             delay=delay,
+            remove_no_alt=st.session_state.remove_no_cap,
+            caption=caption,
         )
     msg.success("Scrape Complete!")
     print("Done.")
 
 
 def search_images(
-    query,
-    project_name,
-    project_dir,
-    res_x,
-    res_y,
-    limit,
-    timeout,
-    delay,
-    msg,
+    query, project_name, project_dir, res_x, res_y, limit, timeout, delay, msg, caption
 ):
     session_time = time.strftime("%Y%m%d%H%M%S")
     cache_path = Path("downloads", "_cache")
@@ -215,6 +231,8 @@ def search_images(
             min_resolution=(res_x, res_y),
             cache_path=cache_filename,
             delay=delay,
+            remove_no_alt=st.session_state.remove_no_cap,
+            caption=caption,
         )
     else:
         PinterestDL.with_api(timeout=timeout).search_and_download(
@@ -224,6 +242,8 @@ def search_images(
             min_resolution=(res_x, res_y),
             cache_path=cache_filename,
             delay=delay,
+            remove_no_alt=st.session_state.remove_no_cap,
+            caption=caption,
         )
     msg.success("Scrape Complete!")
     print("Done.")
@@ -231,7 +251,7 @@ def search_images(
 
 def main():
     st.set_page_config(page_title="Pintereset DL")
-    query, project_name, res_x, res_y, threshold, timeout, delay, mode = setup_ui()
+    query, project_name, res_x, res_y, threshold, timeout, delay, mode, caption = setup_ui()
     project_dir = Path("downloads", project_name)
     col1, col2 = st.columns([0.5, 2])
     msg = st.empty()
@@ -249,6 +269,7 @@ def main():
                         timeout,
                         delay,
                         msg,
+                        caption,
                     )
                 elif mode == MODE_OPTIONS["Search"]:
                     search_images(
@@ -261,6 +282,7 @@ def main():
                         timeout,
                         delay,
                         msg,
+                        caption,
                     )
                 else:
                     msg.error("Invalid mode selected!")
