@@ -9,7 +9,7 @@ import streamlit as st
 from pinterest_dl import PinterestDL
 
 # ========================== Configuration Section ==========================
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 MODE_OPTIONS = {
     "Board": ":material/web: Board",
     "Search": ":material/search: Search",
@@ -21,7 +21,8 @@ COOKIES_PATH.parent.mkdir(parents=True, exist_ok=True)
 # ========================== Util Section ==========================
 def open_directory(path):
     if platform.system() == "Windows":
-        os.startfile(path)
+        path = str(path)
+        subprocess.Popen(["explorer", path])
     elif platform.system() == "Darwin":  # macOS
         subprocess.Popen(["open", path])
     elif platform.system() == "Linux":  # Linux
