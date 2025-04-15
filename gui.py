@@ -8,7 +8,7 @@ import streamlit as st
 from pinterest_dl import PinterestDL
 
 # ========================== Configuration Section ==========================
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 MODE_OPTIONS = {
     "Board": ":material/web: Board",
     "Search": ":material/search: Search",
@@ -223,7 +223,10 @@ def scrape_images(
     if project_dir.exists():
         msg.warning("Project already exists! Merge with existing data.")
 
-    api_instance = PinterestDL.with_api(timeout=timeout)
+    api_instance = PinterestDL.with_api(
+        timeout=timeout,
+        ensure_alt=st.session_state.remove_no_cap,
+    )
     if st.session_state.use_cookies:
         if not COOKIES_PATH.exists():
             msg.error("No cookies found!")
@@ -237,7 +240,6 @@ def scrape_images(
         min_resolution=(res_x, res_y),
         cache_path=cache_filename,
         delay=delay,
-        remove_no_alt=st.session_state.remove_no_cap,
         caption=caption,
     )
     msg.success("Scrape Complete!")
@@ -260,7 +262,10 @@ def search_images(
     if project_dir.exists():
         msg.warning("Project already exists! Merge with existing data.")
 
-    api_instance = PinterestDL.with_api(timeout=timeout)
+    api_instance = PinterestDL.with_api(
+        timeout=timeout,
+        ensure_alt=st.session_state.remove_no_cap,
+    )
     if st.session_state.use_cookies:
         if not COOKIES_PATH.exists():
             msg.error("No cookies found!")
@@ -274,7 +279,6 @@ def search_images(
         min_resolution=(res_x, res_y),
         cache_path=cache_filename,
         delay=delay,
-        remove_no_alt=st.session_state.remove_no_cap,
         caption=caption,
     )
     msg.success("Scrape Complete!")
