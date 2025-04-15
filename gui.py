@@ -35,8 +35,8 @@ def init_state():
     """Initialize Streamlit session state variables."""
     if "use_cookies" not in st.session_state:
         st.session_state.use_cookies = False
-    if "remove_no_cap" not in st.session_state:
-        st.session_state.remove_no_cap = False
+    if "ensure_cap" not in st.session_state:
+        st.session_state.ensure_cap = False
 
 
 def setup_ui():
@@ -92,13 +92,13 @@ def caption_selection():
         ["none", "txt", "json", "metadata"],
         index=0,
     )
-    remove_no_cap = st.toggle(
-        "Remove No Caption",
+    ensure_cap = st.toggle(
+        "Ensure Caption",
         value=False,
-        help="Remove images without captions from the final output. (Set `Caption Type` other than `none` to enable)",
+        help="Ensure each image has a caption. (Set `Caption Type` other than `none` to enable)",
         disabled=(caption_type == "none"),
     )
-    st.session_state.remove_no_cap = remove_no_cap
+    st.session_state.ensure_cap = ensure_cap
     return caption_type
 
 
@@ -225,7 +225,7 @@ def scrape_images(
 
     api_instance = PinterestDL.with_api(
         timeout=timeout,
-        ensure_alt=st.session_state.remove_no_cap,
+        ensure_alt=st.session_state.ensure_cap,
     )
     if st.session_state.use_cookies:
         if not COOKIES_PATH.exists():
@@ -264,7 +264,7 @@ def search_images(
 
     api_instance = PinterestDL.with_api(
         timeout=timeout,
-        ensure_alt=st.session_state.remove_no_cap,
+        ensure_alt=st.session_state.ensure_cap,
     )
     if st.session_state.use_cookies:
         if not COOKIES_PATH.exists():
