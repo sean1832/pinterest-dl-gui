@@ -291,6 +291,7 @@ def main():
     init_state()
     query, project_name, res_x, res_y, image_limit, timeout, delay, mode, caption = setup_ui()
     project_dir = Path("downloads", project_name)
+    footer()
 
     col1, col2 = st.columns([0.5, 2])
     msg = st.empty()
@@ -332,8 +333,6 @@ def main():
                 open_directory(project_dir)
             else:
                 msg.warning("Project directory does not exist!")
-
-    footer()
 
 
 if __name__ == "__main__":
