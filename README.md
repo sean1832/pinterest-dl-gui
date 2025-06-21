@@ -12,7 +12,7 @@ This is a web GUI for scraping Pinterest images with a given URL. It is built on
 #### Automatic Installation
 1. Clone the repository
 ```bash
-git clone https//github.com/sean1832/pinterest-dl-gui.git
+git clone https://github.com/sean1832/pinterest-dl-gui.git
 ```
 2. Execute `gui.bat` to start the server
 
@@ -20,7 +20,7 @@ git clone https//github.com/sean1832/pinterest-dl-gui.git
 Some user might need to install manually.
 1. Clone the repository
 ```bash
-git clone https//github.com/sean1832/pinterest-dl-gui.git
+git clone https://github.com/sean1832/pinterest-dl-gui.git
 ```
 2. Create a virtual environment and activate (optional but recommended)
 ```bash
