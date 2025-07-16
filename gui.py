@@ -8,7 +8,7 @@ import streamlit as st
 from pinterest_dl import PinterestDL
 
 # ========================== Configuration Section ==========================
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 MODE_OPTIONS = {
     "Board": ":material/web: Board",
     "Search": ":material/search: Search",
