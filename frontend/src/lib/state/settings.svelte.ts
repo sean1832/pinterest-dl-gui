@@ -1,4 +1,4 @@
-import { getApi } from "$lib/api";
+import { getApi, onBridgeReady } from "$lib/api";
 
 export type FfmpegStatus = "unknown" | "checking" | "found" | "missing";
 
@@ -49,6 +49,9 @@ $effect.root(() => {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(durable));
 	});
 });
+
+// Auto-check on bridge ready so the dialog never opens showing "Unknown" for the first time.
+onBridgeReady(() => checkFfmpeg());
 
 // Resolve FFmpeg via the Python bridge. Under `vite dev` (no pywebview) the status stays
 // "unknown" so the dev preview still runs; the real check runs inside the packaged app.
