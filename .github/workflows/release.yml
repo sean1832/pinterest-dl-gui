@@ -1,13 +1,13 @@
 name: Release
 
-# Build and publish the Windows executable when a version tag is pushed.
+# Build and publish the Windows executable when a stable version tag is pushed.
 on:
   push:
     tags:
-      - "v*"
+      - "[0-9]*.[0-9]*.[0-9]*" # version tags like 1.2.3 (glob, not regex)
 
 permissions:
-  contents: write # required to create the release and upload the exe
+  contents: write # required to create the release and upload the artifact
 
 jobs:
   build-windows:
@@ -18,7 +18,7 @@ jobs:
       - name: Extract version from tag
         id: version
         shell: bash
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT" # v1.2.3 -> 1.2.3
+        run: echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT" # tag is already 1.2.3
 
       - uses: actions/setup-python@v5
         with:
@@ -34,11 +34,12 @@ jobs:
       - name: Build executable
         run: python build.py --release --version ${{ steps.version.outputs.version }}
 
-      - name: Rename artifact with version
-        shell: bash
-        run: mv dist/pinterest-dl.exe "dist/pinterest-dl-${{ steps.version.outputs.version }}.exe"
+      - name: Package artifact
+        shell: pwsh
+        # exe keeps its name; bundle it with the license into a versioned zip
+        run: Compress-Archive -Path dist/pinterest-dl.exe, LICENSE -DestinationPath "dist/pinterest-dl-gui_windows_${{ steps.version.outputs.version }}.zip"
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/pinterest-dl-${{ steps.version.outputs.version }}.exe
+          files: dist/pinterest-dl-gui_windows_${{ steps.version.outputs.version }}.zip
