@@ -11,4 +11,5 @@ window = webview.create_window(
     height=860,
     min_size=(900, 640),
 )
+api.set_window(window)  # hand the bridge its handle so the run thread can push events into JS
 webview.start()
