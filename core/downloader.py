@@ -25,6 +25,22 @@ def run_api_scrape(
     )
 
 
+def run_api_search(
+    scraper: ApiScraper,
+    config: ScrapeConfig,
+    on_progress: Optional[Callable[[PinterestMedia], None]],
+) -> List[PinterestMedia]:
+    """Run a pinterest-dl search operation"""
+    return scraper.search(
+        query=config.url,  # search mode repurposes the url field to carry the query string
+        num=config.num,
+        min_resolution=config.min_resolution,
+        delay=config.delay,
+        caption_from_title=config.caption_from_title,
+        on_progress=on_progress,
+    )
+
+
 def resolve_cache_path(cache_path: str | None, output_dir: str) -> Path:
     """Pick where to write the metadata cache: an explicit path if given, else an
     auto-timestamped file under the output dir. If the target already exists, append

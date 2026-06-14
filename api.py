@@ -44,7 +44,9 @@ class Api:
 
         url = str(config.get("url", "")).strip()
         if not url:
-            label = "A cache JSON file" if mode == "download" else "Source URL"
+            label = {"download": "A cache JSON file", "search": "A search query"}.get(
+                mode, "Source URL"
+            )
             self._emit(events.error(f"{label} is required."))
             return {"success": False}
 
@@ -101,6 +103,7 @@ class Api:
             load_cache,
             resolve_cache_path,
             run_api_scrape,
+            run_api_search,
             run_download,
             save_cache,
         )
@@ -134,7 +137,12 @@ class Api:
                         self._emit(events.progress("scrape", scraped, config.num))
                         self._emit(events.media(media.src, media.video_stream is not None))
 
-                    media_list = run_api_scrape(scraper, config, on_progress)
+                    if config.mode == "scrape":
+                        media_list = run_api_scrape(scraper, config, on_progress)
+                    elif config.mode == "search":
+                        media_list = run_api_search(scraper, config, on_progress)
+                    else:
+                        raise ValueError(f"Unsupported mode: {config.mode}")
 
                     # === optionally persist the scraped records for later reuse ===
                     if config.save_cache:
