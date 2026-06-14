@@ -1,7 +1,7 @@
 <script lang="ts">
     import { cn } from '$lib/utils';
     import { run, captionItems } from '$lib/state/run.svelte';
-    import OptionRow from '$lib/components/OptionRow.svelte';
+    import { OptionRow, OptionGroup, OptionGroupSub } from '$lib/components/ui/option-row';
     import SettingsDialog from '$lib/components/SettingsDialog.svelte';
     import { Button } from '$lib/components/ui/button';
     import { Input } from '$lib/components/ui/input';
@@ -284,45 +284,50 @@
                 <div class="flex flex-col gap-3">
                     {@render groupLabel('Metadata Cache')}
                     <div class="flex flex-col gap-2">
-                        <OptionRow
-                            title="Save Metadata Cache"
-                            desc="Write scraped records to a JSON file for reuse in Download mode."
-                        >
-                            <Switch bind:checked={run.saveCache} />
-                        </OptionRow>
-
-                        {#if run.saveCache}
-                            <div class="flex flex-col gap-1.5">
-                                <Label for="cachePath">Cache Path</Label>
-                                <div class="flex">
-                                    <Input
-                                        id="cachePath"
-                                        bind:value={run.cachePath}
-                                        oninput={() => {
-                                            cachePathEdited = true;
-                                        }}
-                                        class="flex-1 rounded-r-none border-r-0 font-mono"
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        class="shrink-0 rounded-l-none"
-                                        onclick={browseCacheFile}
-                                    >
-                                        <FolderOpen />
-                                    </Button>
-                                </div>
-                                <p class="text-xs text-muted-foreground">
-                                    Follows the output directory until you change it.
-                                </p>
-                            </div>
-
+                        <OptionGroup>
                             <OptionRow
-                                title="Skip Download"
-                                desc="Save metadata only; don't download media."
+                                flat
+                                title="Save Metadata Cache"
+                                desc="Write scraped records to a JSON file for reuse in Download mode."
                             >
-                                <Switch bind:checked={run.skipDownload} />
+                                <Switch bind:checked={run.saveCache} />
                             </OptionRow>
-                        {/if}
+
+                            {#if run.saveCache}
+                                <OptionGroupSub>
+                                    <div class="flex flex-col gap-1.5 p-3">
+                                        <Label for="cachePath">Cache Path</Label>
+                                        <div class="flex">
+                                            <Input
+                                                id="cachePath"
+                                                bind:value={run.cachePath}
+                                                oninput={() => {
+                                                    cachePathEdited = true;
+                                                }}
+                                                class="flex-1 rounded-r-none border-r-0 font-mono"
+                                            />
+                                            <Button
+                                                variant="outline"
+                                                class="shrink-0 rounded-l-none"
+                                                onclick={browseCacheFile}
+                                            >
+                                                <FolderOpen />
+                                            </Button>
+                                        </div>
+                                        <p class="text-xs text-muted-foreground">
+                                            Follows the output directory until you change it.
+                                        </p>
+                                    </div>
+                                    <OptionRow
+                                        flat
+                                        title="Skip Download"
+                                        desc="Save metadata only; don't download media."
+                                    >
+                                        <Switch bind:checked={run.skipDownload} />
+                                    </OptionRow>
+                                </OptionGroupSub>
+                            {/if}
+                        </OptionGroup>
                     </div>
                 </div>
             {/if}
