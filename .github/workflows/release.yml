@@ -32,6 +32,10 @@ jobs:
         run: pip install -r requirements.txt nuitka
 
       - name: Build executable
+        env:
+          # CI is non-interactive; let Nuitka fetch the dependency walker it needs
+          # for onefile builds instead of prompting and aborting.
+          NUITKA_ASSUME_YES_FOR_DOWNLOADS: "1"
         run: python build.py --release --version ${{ steps.version.outputs.version }}
 
       - name: Package artifact
