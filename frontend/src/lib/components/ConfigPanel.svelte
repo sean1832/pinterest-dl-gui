@@ -5,6 +5,7 @@
     import SettingsDialog from '$lib/components/SettingsDialog.svelte';
     import { Button } from '$lib/components/ui/button';
     import { Input } from '$lib/components/ui/input';
+    import { NumberInput } from '$lib/components/ui/number-input';
     import { Label } from '$lib/components/ui/label';
     import { Switch } from '$lib/components/ui/switch';
     import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -212,12 +213,11 @@
                     {#if showLimit}
                         <div class="flex flex-1 flex-col gap-1.5">
                             <Label for="limit">Limit</Label>
-                            <Input
+                            <NumberInput
                                 id="limit"
-                                type="number"
                                 bind:value={run.limit}
-                                min="1"
-                                max="5000"
+                                min={1}
+                                max={5000}
                             />
                         </div>
                     {/if}
@@ -240,18 +240,16 @@
                         desc="Discard assets smaller than dimensions (0 disables)."
                     >
                         <div class="flex items-center gap-2">
-                            <Input
-                                type="number"
+                            <NumberInput
                                 bind:value={run.resW}
-                                min="0"
-                                class="w-16 font-mono"
+                                min={0}
+                                class="w-28"
                             />
                             <span class="text-muted-foreground">x</span>
-                            <Input
-                                type="number"
+                            <NumberInput
                                 bind:value={run.resH}
-                                min="0"
-                                class="w-16 font-mono"
+                                min={0}
+                                class="w-28"
                             />
                         </div>
                     </OptionRow>

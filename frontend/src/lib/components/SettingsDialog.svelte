@@ -5,6 +5,7 @@
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
+	import { NumberInput } from "$lib/components/ui/number-input";
 	import { Label } from "$lib/components/ui/label";
 	import { Badge } from "$lib/components/ui/badge";
 	import Settings from "@lucide/svelte/icons/settings";
@@ -148,11 +149,11 @@
 				<div class="flex gap-3">
 					<div class="flex flex-1 flex-col gap-1.5">
 						<Label for="set-delay">Request Delay (s)</Label>
-						<Input id="set-delay" type="number" bind:value={settings.delay} step="0.1" min="0" />
+						<NumberInput id="set-delay" bind:value={settings.delay} step={0.1} min={0} />
 					</div>
 					<div class="flex flex-1 flex-col gap-1.5">
 						<Label for="set-timeout">Timeout (s)</Label>
-						<Input id="set-timeout" type="number" bind:value={settings.timeout} step="1" min="0" />
+						<NumberInput id="set-timeout" bind:value={settings.timeout} step={1} min={0} />
 					</div>
 				</div>
 				<p class="rounded-md bg-muted/40 p-2 leading-relaxed text-muted-foreground">
