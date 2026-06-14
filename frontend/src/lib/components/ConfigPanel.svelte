@@ -342,15 +342,16 @@
     <!-- Action bar -->
     <div class="flex items-center justify-between gap-3 border-t border-border bg-card px-6 py-4">
         <SettingsDialog />
-        <div class="flex gap-3">
-            <Button variant="destructive" disabled={!isRunning} onclick={terminate}>
+        {#if isRunning}
+            <Button variant="destructive" onclick={terminate}>
                 <Square />
                 Terminate
             </Button>
-            <Button disabled={isRunning} onclick={execute}>
+        {:else}
+            <Button onclick={execute}>
                 <Play />
                 Execute
             </Button>
-        </div>
+        {/if}
     </div>
 </section>
