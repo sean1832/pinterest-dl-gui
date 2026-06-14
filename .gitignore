@@ -5,3 +5,10 @@ cache
 downloads
 
 cookies
+web/
+dist/
+bin/
+build/
+nuitka-*
+
+tmp/
