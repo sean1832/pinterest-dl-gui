@@ -18,6 +18,7 @@ export interface RunPayload {
     output_dir: string;
     min_resolution: [number, number];
     delay: number;
+    timeout?: number;
     download_streams: boolean;
     skip_remux?: boolean;
     caption_from_title?: boolean;

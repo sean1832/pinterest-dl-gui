@@ -11,6 +11,7 @@ class ScrapeConfig:
     min_resolution: tuple[int, int]
     delay: float
     download_streams: bool
+    timeout: float = 10.0  # per-request timeout for both scrape and download
     # How media is acquired: "scrape"/"search" hit Pinterest; "download" loads a previously
     # saved cache JSON whose path is carried in `url`.
     mode: str = "scrape"

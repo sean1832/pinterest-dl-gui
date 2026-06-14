@@ -72,6 +72,7 @@ class Api:
             output_dir=str(config["output_dir"]),
             min_resolution=(int(res_w), int(res_h)),
             delay=float(config["delay"]),
+            timeout=float(config.get("timeout", 10.0)),
             download_streams=bool(config["download_streams"]),
             skip_remux=bool(config.get("skip_remux", False)),
             caption_from_title=bool(config.get("caption_from_title", False)),
@@ -116,7 +117,9 @@ class Api:
         saved = 0
         try:
             with events.forward_logs(self._emit):
-                downloader = MediaDownloader(user_agent=USER_AGENT, timeout=10, max_retries=3)
+                downloader = MediaDownloader(
+                    user_agent=USER_AGENT, timeout=config.timeout, max_retries=3
+                )
 
                 # === acquire media: load a cache file, or scrape Pinterest ===
                 if config.mode == "download":
@@ -127,7 +130,7 @@ class Api:
                         self._emit(events.media(media.src, media.video_stream is not None))
                     scraped = len(media_list)
                 else:
-                    scraper = PinterestDL.with_api()
+                    scraper = PinterestDL.with_api(timeout=config.timeout)
 
                     def on_progress(media):
                         nonlocal scraped
