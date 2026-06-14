@@ -10,3 +10,5 @@ dist/
 bin/
 build/
 nuitka-*
+
+tmp/
