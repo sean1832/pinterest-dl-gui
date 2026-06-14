@@ -1,30 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%">
   <defs>
-    <linearGradient id="pdl-red-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#FF1E3C" />
-      <stop offset="100%" stop-color="#CC001A" />
+    <linearGradient id="redBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF2442"/>
+      <stop offset="100%" stop-color="#E60023"/>
     </linearGradient>
-    
-    <filter id="pdl-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.2" />
-    </filter>
   </defs>
-
-  <rect width="120" height="120" rx="28" fill="url(#pdl-red-grad)" />
-
-  <g fill="rgba(255, 255, 255, 0.3)">
-    <rect x="24" y="24" width="30" height="44" rx="6" />
-    <rect x="24" y="76" width="30" height="20" rx="6" />
-    <rect x="62" y="24" width="34" height="24" rx="6" />
+  
+  <rect width="120" height="120" rx="28" fill="url(#redBase)" />
+  
+  <g stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M60 30 V80 M40 60 L60 80 L80 60" />
+    <line x1="36" y1="96" x2="84" y2="96" />
   </g>
-
-  <path 
-    d="M79 56 V88 M68 76 L79 89 L90 76" 
-    fill="none" 
-    stroke="#FFFFFF" 
-    stroke-width="7" 
-    stroke-linecap="round" 
-    stroke-linejoin="round" 
-    filter="url(#pdl-shadow)" 
-  />
 </svg>
