@@ -98,6 +98,7 @@
             ensure_alt: run.strictAlt,
             download_streams: run.fetchVideos,
             skip_remux: false,
+            caption: run.caption,
             caption_from_title: false,
             save_cache: run.saveCache,
             cache_path: run.cachePath,

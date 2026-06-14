@@ -78,6 +78,7 @@ class Api:
             download_streams=bool(config["download_streams"]),
             skip_remux=bool(config.get("skip_remux", False)),
             caption_from_title=bool(config.get("caption_from_title", False)),
+            caption=str(config.get("caption", "none")),
             save_cache=save_cache,
             cache_path=(str(config.get("cache_path", "")).strip() or None),
             skip_download=skip_download,
@@ -103,6 +104,7 @@ class Api:
         from pinterest_dl.download import USER_AGENT, MediaDownloader
 
         from core.downloader import (
+            apply_captions,
             load_cache,
             resolve_cache_path,
             run_api_scrape,
@@ -198,6 +200,12 @@ class Api:
                 )
                 if self._stop.is_set():  # cancelled between files
                     raise events.RunCancelled()
+
+                # === captions: write sidecars / embed EXIF for the downloaded files ===
+                if config.caption != "none":
+                    apply_captions(media_list, Path(config.output_dir), config.caption)
+                    self._emit(events.log("info", f"Wrote captions ({config.caption})"))
+
                 self._emit(events.done(scraped, downloaded, videos, saved))
         except events.RunCancelled:
             self._emit(events.log("info", "Run cancelled by user."))

@@ -23,6 +23,7 @@ export interface RunPayload {
     ensure_alt?: boolean;
     download_streams: boolean;
     skip_remux?: boolean;
+    caption?: string;
     caption_from_title?: boolean;
     save_cache?: boolean;
     cache_path?: string;

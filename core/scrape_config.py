@@ -21,6 +21,8 @@ class ScrapeConfig:
     cache_path: str | None = None  # empty -> auto metadata_<timestamp>.json under output_dir
     skip_download: bool = False  # scrape + save cache only; don't download media
     caption_from_title: bool = False
+    # Sidecar/EXIF caption output written after download: "none"/"txt"/"json"/"metadata".
+    caption: str = "none"
     skip_remux: bool = False
     cookies: str | None = None
     ffmpeg_path: str | None = None

@@ -5,6 +5,7 @@ from typing import Callable, List, Optional, Sequence
 from pinterest_dl import ApiScraper, PinterestMedia
 from pinterest_dl.common import io
 from pinterest_dl.download import MediaDownloader
+from pinterest_dl.scrapers import operations
 
 from .scrape_config import ScrapeConfig
 
@@ -89,6 +90,24 @@ def run_download(
         if should_cancel():  # checked before each file -> Terminate stops within one item
             break
         result = downloader.download(media, output_dir, download_videos, skip_remux)
+        media.set_local_path(result)  # captioning reads local_path to find the saved file
         downloaded_paths.append(result)
         on_file_downloaded(i, media)  # drives download-phase progress + the live videos tally
     return downloaded_paths
+
+
+def apply_captions(media_list: Sequence[PinterestMedia], output_dir: Path, caption: str) -> None:
+    """Write captions for downloaded media: txt/json sidecars or embedded EXIF.
+
+    Requires each media's local_path to be set (done by run_download). verbose=True
+    disables pinterest_dl's tqdm progress bar, which has no console to draw to in the
+    packaged windowed app; the debug logs it enables are filtered out by the INFO sink.
+    """
+    if caption == "none":
+        return
+    if caption in ("txt", "json"):
+        operations.add_captions_to_file(media_list, output_dir, caption, verbose=True)
+    elif caption == "metadata":
+        operations.add_captions_to_meta(media_list, verbose=True)
+    else:
+        raise ValueError(f"Invalid caption mode: {caption!r}")
