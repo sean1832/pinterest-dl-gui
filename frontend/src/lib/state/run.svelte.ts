@@ -18,9 +18,9 @@ interface RunConfig {
 
 export const run = $state<RunConfig>({
 	mode: "scrape",
-	source: "https://www.pinterest.com/g/concept-art/",
-	output: "./downloads/concept-art",
-	limit: 100,
+	source: "",
+	output: "./downloads",
+	limit: 1,
 	fetchVideos: false,
 	resW: 0,
 	resH: 0,

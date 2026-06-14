@@ -110,10 +110,15 @@
             <div class="flex flex-col gap-3">
                 {@render groupLabel('Target')}
                 <div class="flex flex-col gap-1.5">
-                    <Label for="source">Source URL / Query</Label>
+                    <Label for="source"
+                        >{run.mode === 'search' ? 'Search Query' : 'Source URL'}</Label
+                    >
                     <div class="flex">
                         <Input
                             id="source"
+                            placeholder={run.mode === 'search'
+                                ? 'cats'
+                                : 'https://www.pinterest.com/pin/1234567890/'}
                             bind:value={run.source}
                             class={cn(
                                 'flex-1 font-mono',
@@ -133,6 +138,7 @@
                         <div class="flex">
                             <Input
                                 id="output"
+                                placeholder="./downloads"
                                 bind:value={run.output}
                                 class="flex-1 rounded-r-none border-r-0 font-mono"
                             />
