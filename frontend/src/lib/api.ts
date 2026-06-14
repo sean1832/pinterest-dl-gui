@@ -7,12 +7,11 @@ export type RunEvent =
     | { type: "progress"; phase: "scrape" | "download"; current: number; total: number }
     | { type: "log"; level: "info" | "warn" | "error"; message: string }
     | { type: "media"; thumbnail: string; isVideo: boolean }
-    | { type: "done"; scraped: number; downloaded: number; videos: number; filtered: number }
+    | { type: "done"; scraped: number; downloaded: number; videos: number }
     | { type: "error"; message: string };
 
 // match the shape of ScrapeConfig in core/scrape_config.py
 export interface RunPayload {
-    client: string;
     url: string;
     num: number;
     output_dir: string;

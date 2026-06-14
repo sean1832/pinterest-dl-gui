@@ -42,10 +42,6 @@ class Api:
             self._emit(events.error("Source URL is required."))
             return {"success": False}
 
-        if config.get("client") != "api":
-            self._emit(events.error("Only the API client is supported."))
-            return {"success": False}
-
         if self._thread is not None and self._thread.is_alive():  # ensure single run at a time.
             self._emit(events.error("A run is already in progress. Please wait for it to finish."))
             return {"success": False}
@@ -130,10 +126,10 @@ class Api:
                 )
                 if self._stop.is_set():  # cancelled between files
                     raise events.RunCancelled()
-                self._emit(events.done(scraped, downloaded, videos, 0))
+                self._emit(events.done(scraped, downloaded, videos))
         except events.RunCancelled:
             self._emit(events.log("info", "Run cancelled by user."))
-            self._emit(events.done(scraped, downloaded, videos, 0))
+            self._emit(events.done(scraped, downloaded, videos))
         except Exception as e:
             self._emit(events.error(f"An unexpected error occurred: {str(e)}"))
         finally:

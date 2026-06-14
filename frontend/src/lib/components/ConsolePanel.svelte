@@ -5,7 +5,6 @@
     import { Badge } from '$lib/components/ui/badge';
     import { ScrollArea } from '$lib/components/ui/scroll-area';
     import Download from '@lucide/svelte/icons/download';
-    import Funnel from '@lucide/svelte/icons/funnel';
     import Film from '@lucide/svelte/icons/film';
 
     const tagClass: Record<string, string> = {
@@ -37,7 +36,7 @@
 
 <section class="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
     <!-- Telemetry -->
-    <div class="grid grid-cols-3 border-b border-border bg-card">
+    <div class="grid grid-cols-2 border-b border-border bg-card">
         <div class="flex flex-col gap-1 border-r border-border p-4">
             <span class="text-[28px] leading-none font-semibold tracking-tight">
                 {runStatus.counts.downloaded}
@@ -47,19 +46,6 @@
             >
                 <Download class="size-3" />
                 Downloaded
-            </span>
-        </div>
-        <div class="flex flex-col gap-1 border-r border-border p-4">
-            <span
-                class="text-[28px] leading-none font-semibold tracking-tight text-muted-foreground"
-            >
-                {runStatus.counts.filtered}
-            </span>
-            <span
-                class="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
-            >
-                <Funnel class="size-3" />
-                Filtered
             </span>
         </div>
         <div class="flex flex-col gap-1 p-4">

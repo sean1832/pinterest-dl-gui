@@ -22,13 +22,12 @@ def media(thumbnail: str, is_video: bool) -> Event:
     return {"type": "media", "thumbnail": thumbnail, "is_video": is_video}
 
 
-def done(scraped: int, downloaded: int, videos: int, filtered: int) -> Event:
+def done(scraped: int, downloaded: int, videos: int) -> Event:
     return {
         "type": "done",
         "scraped": scraped,
         "downloaded": downloaded,
         "videos": videos,
-        "filtered": filtered,
     }
 
 

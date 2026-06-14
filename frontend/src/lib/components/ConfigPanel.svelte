@@ -1,6 +1,6 @@
 <script lang="ts">
     import { cn } from '$lib/utils';
-    import { run, captionItems, clientItems } from '$lib/state/run.svelte';
+    import { run, captionItems } from '$lib/state/run.svelte';
     import OptionRow from '$lib/components/OptionRow.svelte';
     import SettingsDialog from '$lib/components/SettingsDialog.svelte';
     import { Button } from '$lib/components/ui/button';
@@ -10,7 +10,6 @@
     import { ScrollArea } from '$lib/components/ui/scroll-area';
     import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
     import * as Select from '$lib/components/ui/select';
-    import * as Accordion from '$lib/components/ui/accordion';
     import Download from '@lucide/svelte/icons/download';
     import Search from '@lucide/svelte/icons/search';
     import Database from '@lucide/svelte/icons/database';
@@ -26,14 +25,8 @@
 
     const showLimit = $derived(run.mode !== 'cache');
     const showBrowseSource = $derived(run.mode === 'cache');
-    const clientDisabled = $derived(run.mode === 'search' || run.mode === 'cache');
-    // Incognito is a browser-only flag; hide it for the API client (and cache mode).
-    const showIncognito = $derived(run.client === 'chromium' || run.client === 'firefox');
     const captionLabel = $derived(
         captionItems.find((i) => i.value === run.caption)?.label ?? 'Select'
-    );
-    const clientLabel = $derived(
-        clientItems.find((i) => i.value === run.client)?.label ?? 'Select'
     );
 
     const isRunning = $derived(runStatus.status === 'running');
@@ -43,7 +36,6 @@
         if (!api) return; // no bridge under `vite dev`; should be impossible to reach the button in this state
         resetRun(); // clear prior run + set timestamp before events arrive
         api.start_run({
-            client: run.client,
             url: run.source,
             num: run.limit,
             output_dir: run.output,
@@ -209,56 +201,14 @@
                             </Select.Content>
                         </Select.Root>
                     </OptionRow>
-                </div>
-            </div>
 
-            <!-- Advanced -->
-            <div class="flex flex-col gap-3">
-                {@render groupLabel('Advanced')}
-                <Accordion.Root type="multiple" class="flex flex-col gap-2">
-                    <Accordion.Item
-                        value="engine"
-                        class="rounded-md border border-border bg-card px-3"
+                    <OptionRow
+                        title="Strict Alt-Text"
+                        desc="Drop assets lacking valid captions."
                     >
-                        <Accordion.Trigger>Engine</Accordion.Trigger>
-                        <Accordion.Content class="flex flex-col gap-3 border-t border-border pt-3">
-                            <div class="flex flex-col gap-1.5">
-                                <Label>Client Engine</Label>
-                                <Select.Root
-                                    type="single"
-                                    bind:value={run.client}
-                                    disabled={clientDisabled}
-                                >
-                                    <Select.Trigger class="w-full">{clientLabel}</Select.Trigger>
-                                    <Select.Content>
-                                        <Select.Group>
-                                            {#each clientItems as item (item.value)}
-                                                <Select.Item
-                                                    value={item.value}
-                                                    label={item.label}
-                                                />
-                                            {/each}
-                                        </Select.Group>
-                                    </Select.Content>
-                                </Select.Root>
-                            </div>
-                            {#if showIncognito}
-                                <OptionRow
-                                    title="Incognito Context"
-                                    desc="Isolate browser session state."
-                                >
-                                    <Switch bind:checked={run.incognito} />
-                                </OptionRow>
-                            {/if}
-                            <OptionRow
-                                title="Strict Alt-Text"
-                                desc="Drop assets lacking valid captions."
-                            >
-                                <Switch bind:checked={run.strictAlt} />
-                            </OptionRow>
-                        </Accordion.Content>
-                    </Accordion.Item>
-                </Accordion.Root>
+                        <Switch bind:checked={run.strictAlt} />
+                    </OptionRow>
+                </div>
             </div>
         </div>
     </ScrollArea>

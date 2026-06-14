@@ -23,7 +23,6 @@ interface RunStatus {
     previews: Preview[];
     counts: {
         downloaded: number;
-        filtered: number; // perhaps we should just get rid of this?
         videos: number;
     }
     startedAt: number;
@@ -35,7 +34,7 @@ export const runStatus = $state<RunStatus>({
     total: 0,
     logs: [],
     previews: [],
-    counts: { downloaded: 0, filtered: 0, videos: 0 },
+    counts: { downloaded: 0, videos: 0 },
     startedAt: 0,
 });
 
@@ -47,7 +46,7 @@ export function resetRun(): void {
     runStatus.total = 0;
     runStatus.logs = [];
     runStatus.previews = [];
-    runStatus.counts = { downloaded: 0, filtered: 0, videos: 0 };
+    runStatus.counts = { downloaded: 0, videos: 0 };
     runStatus.startedAt = Date.now();  // log timestamps are relative to this
 }
 
@@ -87,7 +86,6 @@ function apply(event: RunEvent): void {
             // Authoritative final counts replace the live estimates.
             runStatus.counts = {
                 downloaded: event.downloaded,
-                filtered: event.filtered,
                 videos: event.videos,
             };
             break;
