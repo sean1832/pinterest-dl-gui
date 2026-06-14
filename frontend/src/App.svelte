@@ -1,17 +1,24 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { cn } from '$lib/utils';
-    import { settings, checkFfmpeg } from '$lib/state/settings.svelte';
-    import { run } from '$lib/state/run.svelte';
+    import { checkFfmpeg } from '$lib/state/settings.svelte';
     import ConfigPanel from '$lib/components/ConfigPanel.svelte';
     import ConsolePanel from '$lib/components/ConsolePanel.svelte';
+    import { onBridgeReady, getApi } from '$lib/api';
 
-    const scopeLabel = $derived(settings.cookies ? 'Private' : 'Public');
-    const engineLabel = $derived(run.mode === 'cache' ? 'N/A' : run.client.toUpperCase());
+    let coreVersion = $state('unknown');
+    async function loadCoreVersion() {
+        const api = getApi();
+        if (!api) return 'unknown';
+        coreVersion = await api.get_core_version();
+    }
 
-    // Resolve FFmpeg once on startup (no-op under `vite dev` without pywebview).
+    // Resolve FFmpeg once on startup.
     onMount(() => {
-        void checkFfmpeg();
+        onBridgeReady(() => {
+            void checkFfmpeg();
+            void loadCoreVersion();
+        });
     });
 
     // --- Resizable left config pane (horizontal split) ------------------------
@@ -104,6 +111,6 @@
             </div>
         </div>
 
-        <div>Engine: {engineLabel} | Scope: {scopeLabel}</div>
+        <div>pinterest-dl v{coreVersion} | GUI v{__APP_VERSION__}</div>
     </footer>
 </div>

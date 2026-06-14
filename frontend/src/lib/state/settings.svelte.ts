@@ -1,24 +1,6 @@
-// App-global settings shared across modes (scrape/search/cache): authentication,
-// the FFmpeg toolchain, and network defaults. Lives in a module-level `$state` so the
-// config panel, footer, and Settings dialog all read/write one source without prop drilling.
+import { getApi } from "$lib/api";
 
 export type FfmpegStatus = "unknown" | "checking" | "found" | "missing";
-
-interface FfmpegResult {
-	found: boolean;
-	path: string;
-}
-
-// The pywebview js_api surface (Python `Api` methods). Absent under `vite dev`.
-interface PinterestApi {
-	check_ffmpeg(customPath: string | null): Promise<FfmpegResult>;
-}
-
-declare global {
-	interface Window {
-		pywebview?: { api?: PinterestApi };
-	}
-}
 
 interface Settings {
 	cookies: string;
@@ -71,7 +53,7 @@ $effect.root(() => {
 // Resolve FFmpeg via the Python bridge. Under `vite dev` (no pywebview) the status stays
 // "unknown" so the dev preview still runs; the real check runs inside the packaged app.
 export async function checkFfmpeg(): Promise<void> {
-	const api = window.pywebview?.api;
+	const api = getApi();
 	if (!api) {
 		settings.ffmpegStatus = "unknown";
 		return;
