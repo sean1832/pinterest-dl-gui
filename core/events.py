@@ -19,7 +19,8 @@ def log(level: LogLevel, message: str) -> Event:
 
 
 def media(thumbnail: str, is_video: bool) -> Event:
-    return {"type": "media", "thumbnail": thumbnail, "is_video": is_video}
+    # isVideo (camelCase) matches the RunEvent contract the frontend reads off the wire.
+    return {"type": "media", "thumbnail": thumbnail, "isVideo": is_video}
 
 
 def done(scraped: int, downloaded: int, videos: int, saved: int = 0) -> Event:

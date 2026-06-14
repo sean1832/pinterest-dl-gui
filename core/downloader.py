@@ -1,7 +1,10 @@
+import base64
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence
 
+from PIL import Image
 from pinterest_dl import ApiScraper, PinterestMedia
 from pinterest_dl.common import io
 from pinterest_dl.download import MediaDownloader
@@ -94,6 +97,28 @@ def run_download(
         downloaded_paths.append(result)
         on_file_downloaded(i, media)  # drives download-phase progress + the live videos tally
     return downloaded_paths
+
+
+def thumbnail_data_uri(path: Path, max_edge: int = 104) -> str:
+    """Build a small base64 JPEG data URI from a downloaded image, for the preview strip.
+
+    The app page is served over http://127.0.0.1, so it can't load file:// paths, and
+    pointing an <img> at the remote source would re-download every image. A data URI of
+    the on-disk file avoids both. max_edge is 2x the 52px display box for retina sharpness.
+    Returns "" when the file isn't a decodable image (e.g. a video), so the caller can fall
+    back to a placeholder.
+    """
+    try:
+        with Image.open(path) as img:
+            img.draft("RGB", (max_edge, max_edge))  # let the JPEG decoder downscale up front
+            img = img.convert("RGB")
+            img.thumbnail((max_edge, max_edge))
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG", quality=80)
+    except (OSError, ValueError):
+        return ""
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f"data:image/jpeg;base64,{encoded}"
 
 
 def apply_captions(media_list: Sequence[PinterestMedia], output_dir: Path, caption: str) -> None:

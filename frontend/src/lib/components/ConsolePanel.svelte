@@ -85,19 +85,23 @@
     <ScrollArea orientation="horizontal" class="border-b border-border bg-card">
         <div class="flex min-h-[85px] gap-2 p-4">
             {#each runStatus.previews as preview, i (i)}
-                <div class="relative shrink-0">
-                    <img
-                        src={preview.thumbnail}
-                        alt=""
-                        loading="lazy"
-                        class="size-[52px] rounded-md border border-border object-cover"
-                    />
-                    {#if preview.isVideo}
-                        <span
-                            class="absolute right-0.5 bottom-0.5 flex items-center rounded bg-black/70 p-0.5 text-white"
+                <div class="shrink-0">
+                    {#if preview.thumbnail}
+                        <img
+                            src={preview.thumbnail}
+                            alt=""
+                            loading="lazy"
+                            class="size-[52px] rounded-md border border-border object-cover"
+                        />
+                    {:else}
+                        <!-- Video streams (and any image we couldn't decode) have no still to show. -->
+                        <div
+                            class="flex size-[52px] items-center justify-center rounded-md border border-border bg-muted text-muted-foreground"
                         >
-                            <Film class="size-3" />
-                        </span>
+                            {#if preview.isVideo}
+                                <Film class="size-5" />
+                            {/if}
+                        </div>
                     {/if}
                 </div>
             {/each}

@@ -10,7 +10,7 @@ export interface LogLine {
 }
 
 export interface Preview {
-    thumbnail: string;
+    thumbnail: string;  // base64 data URI of the downloaded image, or "" for video streams
     isVideo: boolean;
 }
 
@@ -79,7 +79,7 @@ function apply(event: RunEvent): void {
             break;
         case "media":
             runStatus.previews.push({ thumbnail: event.thumbnail, isVideo: event.isVideo });
-            if (event.isVideo) runStatus.counts.videos += 1;  // live tally during scrape
+            if (event.isVideo) runStatus.counts.videos += 1;  // live tally as files download
             break;
         case "done":
             runStatus.status = "done";

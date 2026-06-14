@@ -113,6 +113,7 @@ class Api:
             run_api_search,
             run_download,
             save_cache,
+            thumbnail_data_uri,
         )
 
         # Initialized up front so the cancel/except paths can report partial counts even if
@@ -129,11 +130,9 @@ class Api:
 
                 # === acquire media: load a cache file, or scrape Pinterest ===
                 if config.mode == "download":
+                    if self._stop.is_set():
+                        raise events.RunCancelled()
                     media_list = load_cache(Path(config.url))
-                    for media in media_list:
-                        if self._stop.is_set():
-                            raise events.RunCancelled()
-                        self._emit(events.media(media.src, media.video_stream is not None))
                     scraped = len(media_list)
                 else:
                     scraper = PinterestDL.with_api(
@@ -150,7 +149,6 @@ class Api:
                             raise events.RunCancelled()
                         scraped += 1
                         self._emit(events.progress("scrape", scraped, config.num))
-                        self._emit(events.media(media.src, media.video_stream is not None))
 
                     if config.mode == "scrape":
                         media_list = run_api_scrape(scraper, config, on_progress)
@@ -198,9 +196,13 @@ class Api:
                 def on_file_downloaded(index: int, media: PinterestMedia):
                     nonlocal downloaded, videos
                     downloaded = index + 1
-                    if download_streams and media.video_stream is not None:
+                    is_video_file = download_streams and media.video_stream is not None
+                    if is_video_file:
                         videos += 1
                     self._emit(events.progress("download", downloaded, total))
+                    # Preview the file just written to disk; a video stream has no still to show.
+                    thumbnail = "" if is_video_file else thumbnail_data_uri(media.local_path)
+                    self._emit(events.media(thumbnail, is_video_file))
 
                 run_download(
                     media_list,
