@@ -18,7 +18,6 @@ class ScrapeConfig:
     save_cache: bool = False
     cache_path: str | None = None  # empty -> auto metadata_<timestamp>.json under output_dir
     skip_download: bool = False  # scrape + save cache only; don't download media
-    # TODO: implement in core and expose in UI
     caption_from_title: bool = False
     skip_remux: bool = False
     cookies: str | None = None
