@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { cn } from "$lib/utils";
+	import { getApi } from "$lib/api";
 	import { settings, checkFfmpeg, type FfmpegStatus } from "$lib/state/settings.svelte";
 	import * as Dialog from "$lib/components/ui/dialog";
 	import { Button } from "$lib/components/ui/button";
@@ -25,9 +26,21 @@
 	};
 	const status = $derived(statusMeta[settings.ffmpegStatus]);
 
-	// Cosmetic stand-in for the `login` capture flow until the bridge is wired.
-	function captureCookies() {
-		settings.cookies = "./cookies/session.json";
+	async function browseCookies() {
+		const api = getApi();
+		if (!api) return;
+		const path = await api.select_json_file(settings.cookies);
+		if (path) settings.cookies = path;
+	}
+
+	async function browseFfmpeg() {
+		const api = getApi();
+		if (!api) return;
+		const path = await api.select_file(settings.ffmpegPath);
+		if (path) {
+			settings.ffmpegPath = path;
+			await checkFfmpeg();
+		}
 	}
 </script>
 
@@ -68,9 +81,8 @@
 							placeholder="No file loaded"
 							class="flex-1 rounded-r-none border-r-0 font-mono"
 						/>
-						<Button variant="outline" class="shrink-0 rounded-l-none" onclick={captureCookies}>
-							<KeyRound />
-							Capture
+						<Button variant="outline" class="shrink-0 rounded-l-none" onclick={browseCookies}>
+							<FolderOpen />
 						</Button>
 					</div>
 				</div>
@@ -109,7 +121,6 @@
 					</div>
 					<Button variant="outline" size="sm" class="shrink-0" onclick={() => checkFfmpeg()}>
 						<RefreshCw />
-						Test
 					</Button>
 				</div>
 				<div class="flex flex-col gap-1.5">
@@ -121,9 +132,8 @@
 							placeholder="Leave empty to use PATH"
 							class="flex-1 rounded-r-none border-r-0 font-mono"
 						/>
-						<Button variant="outline" class="shrink-0 rounded-l-none">
+						<Button variant="outline" class="shrink-0 rounded-l-none" onclick={browseFfmpeg}>
 							<FolderOpen />
-							Browse
 						</Button>
 					</div>
 				</div>
