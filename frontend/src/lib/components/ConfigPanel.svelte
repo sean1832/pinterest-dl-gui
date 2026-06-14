@@ -94,6 +94,7 @@
             min_resolution: [run.resW, run.resH],
             delay: settings.delay,
             timeout: settings.timeout,
+            cookies: settings.cookies,
             download_streams: run.fetchVideos,
             skip_remux: false,
             caption_from_title: false,

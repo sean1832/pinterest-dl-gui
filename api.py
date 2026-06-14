@@ -73,6 +73,7 @@ class Api:
             min_resolution=(int(res_w), int(res_h)),
             delay=float(config["delay"]),
             timeout=float(config.get("timeout", 10.0)),
+            cookies=(str(config.get("cookies", "")).strip() or None),
             download_streams=bool(config["download_streams"]),
             skip_remux=bool(config.get("skip_remux", False)),
             caption_from_title=bool(config.get("caption_from_title", False)),
@@ -131,6 +132,10 @@ class Api:
                     scraped = len(media_list)
                 else:
                     scraper = PinterestDL.with_api(timeout=config.timeout)
+                    # Cookies are optional; required only for private boards. Bad path/format
+                    # raises here and surfaces as a run error rather than failing silently.
+                    if config.cookies:
+                        scraper.with_cookies_path(config.cookies)
 
                     def on_progress(media):
                         nonlocal scraped
