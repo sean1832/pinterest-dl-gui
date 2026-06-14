@@ -1,7 +1,9 @@
+from datetime import datetime
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Sequence
 
 from pinterest_dl import ApiScraper, PinterestMedia
+from pinterest_dl.common import io
 from pinterest_dl.download import MediaDownloader
 
 from .scrape_config import ScrapeConfig
@@ -21,6 +23,39 @@ def run_api_scrape(
         caption_from_title=config.caption_from_title,
         on_progress=on_progress,
     )
+
+
+def resolve_cache_path(cache_path: str | None, output_dir: str) -> Path:
+    """Pick where to write the metadata cache: an explicit path if given, else an
+    auto-timestamped file under the output dir. If the target already exists, append
+    a numeric suffix (_1, _2, ...) so repeat runs don't overwrite."""
+    if cache_path and cache_path.strip():
+        base = Path(cache_path.strip())
+    else:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base = Path(output_dir) / f"metadata_{timestamp}.json"
+
+    if not base.exists():
+        return base
+    counter = 1
+    while True:
+        candidate = base.with_name(f"{base.stem}_{counter}{base.suffix}")
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
+def save_cache(media_list: Sequence[PinterestMedia], path: Path) -> None:
+    """Serialize scraped media records to JSON for later reuse by download mode."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    io.write_json([media.to_dict() for media in media_list], str(path), indent=4)
+
+
+def load_cache(path: Path) -> List[PinterestMedia]:
+    """Rebuild media records from a previously saved cache JSON."""
+    raw = io.read_json(str(path))
+    records = raw if isinstance(raw, list) else [raw]
+    return [PinterestMedia.from_dict(record) for record in records]
 
 
 def run_download(

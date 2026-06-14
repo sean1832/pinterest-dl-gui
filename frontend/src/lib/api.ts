@@ -7,12 +7,13 @@ export type RunEvent =
     | { type: "progress"; phase: "scrape" | "download"; current: number; total: number }
     | { type: "log"; level: "info" | "warn" | "error"; message: string }
     | { type: "media"; thumbnail: string; isVideo: boolean }
-    | { type: "done"; scraped: number; downloaded: number; videos: number }
+    | { type: "done"; scraped: number; downloaded: number; videos: number; saved: number }
     | { type: "error"; message: string };
 
 // match the shape of ScrapeConfig in core/scrape_config.py
 export interface RunPayload {
     url: string;
+    mode: string;
     num: number;
     output_dir: string;
     min_resolution: [number, number];
@@ -20,6 +21,9 @@ export interface RunPayload {
     download_streams: boolean;
     skip_remux?: boolean;
     caption_from_title?: boolean;
+    save_cache?: boolean;
+    cache_path?: string;
+    skip_download?: boolean;
 }
 
 export interface PinterestApi {
@@ -27,6 +31,9 @@ export interface PinterestApi {
     check_ffmpeg(customPath: string | null): Promise<FfmpegResult>;
     start_run(config: RunPayload): Promise<{ started: boolean;}>;
     terminate(): Promise<void>;
+    select_cache_file(defaultPath: string): Promise<string>;
+    select_json_file(defaultPath: string): Promise<string>;
+    select_folder(defaultPath: string): Promise<string>;
 }
 
 declare global {

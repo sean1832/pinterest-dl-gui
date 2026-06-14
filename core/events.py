@@ -22,12 +22,13 @@ def media(thumbnail: str, is_video: bool) -> Event:
     return {"type": "media", "thumbnail": thumbnail, "is_video": is_video}
 
 
-def done(scraped: int, downloaded: int, videos: int) -> Event:
+def done(scraped: int, downloaded: int, videos: int, saved: int = 0) -> Event:
     return {
         "type": "done",
         "scraped": scraped,
         "downloaded": downloaded,
         "videos": videos,
+        "saved": saved,  # records written to a metadata cache (0 when not saving)
     }
 
 

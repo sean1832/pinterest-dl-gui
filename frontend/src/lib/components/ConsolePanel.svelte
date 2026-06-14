@@ -6,6 +6,7 @@
     import { ScrollArea } from '$lib/components/ui/scroll-area';
     import Download from '@lucide/svelte/icons/download';
     import Film from '@lucide/svelte/icons/film';
+    import Save from '@lucide/svelte/icons/save';
 
     const tagClass: Record<string, string> = {
         SYS: 'bg-primary/10 text-primary',
@@ -26,6 +27,11 @@
         runStatus.total > 0 ? Math.round((runStatus.current / runStatus.total) * 100) : 0
     );
 
+    // A metadata-only run downloads nothing; show what it saved instead of a bare 0.
+    const savedOnly = $derived(
+        runStatus.counts.downloaded === 0 && runStatus.counts.saved > 0
+    );
+
     const phaseLabel = $derived.by(() => {
         if (runStatus.status === 'idle') return 'Idle';
         if (runStatus.status === 'done') return 'Done';
@@ -39,13 +45,18 @@
     <div class="grid grid-cols-2 border-b border-border bg-card">
         <div class="flex flex-col gap-1 border-r border-border p-4">
             <span class="text-[28px] leading-none font-semibold tracking-tight">
-                {runStatus.counts.downloaded}
+                {savedOnly ? runStatus.counts.saved : runStatus.counts.downloaded}
             </span>
             <span
                 class="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
             >
-                <Download class="size-3" />
-                Downloaded
+                {#if savedOnly}
+                    <Save class="size-3" />
+                    Saved
+                {:else}
+                    <Download class="size-3" />
+                    Downloaded
+                {/if}
             </span>
         </div>
         <div class="flex flex-col gap-1 p-4">

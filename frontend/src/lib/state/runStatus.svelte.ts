@@ -24,6 +24,7 @@ interface RunStatus {
     counts: {
         downloaded: number;
         videos: number;
+        saved: number;  // records written to a metadata cache; drives the "Saved" tile
     }
     startedAt: number;
 }
@@ -34,7 +35,7 @@ export const runStatus = $state<RunStatus>({
     total: 0,
     logs: [],
     previews: [],
-    counts: { downloaded: 0, videos: 0 },
+    counts: { downloaded: 0, videos: 0, saved: 0 },
     startedAt: 0,
 });
 
@@ -46,7 +47,7 @@ export function resetRun(): void {
     runStatus.total = 0;
     runStatus.logs = [];
     runStatus.previews = [];
-    runStatus.counts = { downloaded: 0, videos: 0 };
+    runStatus.counts = { downloaded: 0, videos: 0, saved: 0 };
     runStatus.startedAt = Date.now();  // log timestamps are relative to this
 }
 
@@ -87,6 +88,7 @@ function apply(event: RunEvent): void {
             runStatus.counts = {
                 downloaded: event.downloaded,
                 videos: event.videos,
+                saved: event.saved,
             };
             break;
         case "error":

@@ -1,4 +1,4 @@
-// Per-run configuration for the active mode (scrape/search/cache): the target, output,
+// Per-run configuration for the active mode (scrape/search/download): the target, output,
 // and extraction options. Lives in a module-level `$state` so the config panel and
 // status footer read/write one source without prop drilling, mirroring `settings.svelte.ts`.
 
@@ -12,6 +12,10 @@ interface RunConfig {
 	resH: number;
 	caption: string;
 	strictAlt: boolean;
+	// Output: scrape/search can persist records to a cache JSON, and optionally stop there.
+	saveCache: boolean;
+	cachePath: string; // empty -> auto metadata_<timestamp>.json under the output dir
+	skipDownload: boolean;
 }
 
 export const run = $state<RunConfig>({
@@ -24,6 +28,9 @@ export const run = $state<RunConfig>({
 	resH: 0,
 	caption: "none",
 	strictAlt: false,
+	saveCache: false,
+	cachePath: "",
+	skipDownload: false,
 });
 
 export const captionItems: { value: string; label: string }[] = [

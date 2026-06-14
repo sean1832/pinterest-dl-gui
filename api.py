@@ -3,6 +3,7 @@ import shutil
 import threading
 from pathlib import Path
 
+import webview
 from pinterest_dl import PinterestMedia
 
 from core import events
@@ -37,9 +38,23 @@ class Api:
 
     def start_run(self, config: dict) -> dict:
         """Validate a run request and launch it on a daemon thread. Returns immediately."""
+        mode = str(config.get("mode", "scrape"))
+        save_cache = bool(config.get("save_cache", False))
+        skip_download = bool(config.get("skip_download", False))
+
         url = str(config.get("url", "")).strip()
         if not url:
-            self._emit(events.error("Source URL is required."))
+            label = "A cache JSON file" if mode == "download" else "Source URL"
+            self._emit(events.error(f"{label} is required."))
+            return {"success": False}
+
+        if mode == "download" and not Path(url).is_file():
+            self._emit(events.error(f"Cache file not found: {url}"))
+            return {"success": False}
+
+        # Metadata-only only applies when scraping; download mode ignores both flags.
+        if mode != "download" and skip_download and not save_cache:  # would produce nothing
+            self._emit(events.error("Skip download requires Save metadata cache to be enabled."))
             return {"success": False}
 
         if self._thread is not None and self._thread.is_alive():  # ensure single run at a time.
@@ -50,6 +65,7 @@ class Api:
 
         scrape_config = ScrapeConfig(
             url=url,
+            mode=mode,
             num=int(config["num"]),
             output_dir=str(config["output_dir"]),
             min_resolution=(int(res_w), int(res_h)),
@@ -57,6 +73,9 @@ class Api:
             download_streams=bool(config["download_streams"]),
             skip_remux=bool(config.get("skip_remux", False)),
             caption_from_title=bool(config.get("caption_from_title", False)),
+            save_cache=save_cache,
+            cache_path=(str(config.get("cache_path", "")).strip() or None),
+            skip_download=skip_download,
         )
 
         self._stop.clear()  # reset any leftover cancel from a previous run
@@ -69,32 +88,65 @@ class Api:
         self._stop.set()
 
     def _run(self, config: ScrapeConfig) -> None:
-        """Execute one run (scrape -> download) on the background thread, emitting events"""
+        """Execute one run on the background thread, emitting events.
+
+        Two shapes: download mode loads media from a cache JSON and downloads it;
+        scrape/search mode scrapes Pinterest, optionally saves a cache JSON, and
+        optionally stops there (metadata only) instead of downloading.
+        """
         from pinterest_dl import PinterestDL
         from pinterest_dl.download import USER_AGENT, MediaDownloader
 
-        from core.downloader import run_api_scrape, run_download
+        from core.downloader import (
+            load_cache,
+            resolve_cache_path,
+            run_api_scrape,
+            run_download,
+            save_cache,
+        )
 
         # Initialized up front so the cancel/except paths can report partial counts even if
         # never reach the download phase (media_list may not exists there)
         scraped = 0
         downloaded = 0
         videos = 0
+        saved = 0
         try:
             with events.forward_logs(self._emit):
-                scraper = PinterestDL.with_api()
                 downloader = MediaDownloader(user_agent=USER_AGENT, timeout=10, max_retries=3)
 
-                # === scraping phase ===
-                def on_progress(media):
-                    nonlocal scraped
-                    if self._stop.is_set():
-                        raise events.RunCancelled()
-                    scraped += 1
-                    self._emit(events.progress("scrape", scraped, config.num))
-                    self._emit(events.media(media.src, media.video_stream is not None))
+                # === acquire media: load a cache file, or scrape Pinterest ===
+                if config.mode == "download":
+                    media_list = load_cache(Path(config.url))
+                    for media in media_list:
+                        if self._stop.is_set():
+                            raise events.RunCancelled()
+                        self._emit(events.media(media.src, media.video_stream is not None))
+                    scraped = len(media_list)
+                else:
+                    scraper = PinterestDL.with_api()
 
-                media_list = run_api_scrape(scraper, config, on_progress)
+                    def on_progress(media):
+                        nonlocal scraped
+                        if self._stop.is_set():
+                            raise events.RunCancelled()
+                        scraped += 1
+                        self._emit(events.progress("scrape", scraped, config.num))
+                        self._emit(events.media(media.src, media.video_stream is not None))
+
+                    media_list = run_api_scrape(scraper, config, on_progress)
+
+                    # === optionally persist the scraped records for later reuse ===
+                    if config.save_cache:
+                        cache_path = resolve_cache_path(config.cache_path, config.output_dir)
+                        save_cache(media_list, cache_path)
+                        saved = len(media_list)
+                        self._emit(events.log("info", f"Saved {saved} records to {cache_path}"))
+
+                    # === metadata-only: stop before downloading ===
+                    if config.skip_download:
+                        self._emit(events.done(scraped, downloaded, videos, saved))
+                        return
 
                 # === ffmpeg guard: ===
                 # downgrade videos -> images if remux needed but unavailable
@@ -107,6 +159,7 @@ class Api:
 
                 # === download phase ===
                 total = len(media_list)
+                self._emit(events.progress("download", 0, total))  # flip phase label to Downloading
 
                 def on_file_downloaded(index: int, media: PinterestMedia):
                     nonlocal downloaded, videos
@@ -126,10 +179,10 @@ class Api:
                 )
                 if self._stop.is_set():  # cancelled between files
                     raise events.RunCancelled()
-                self._emit(events.done(scraped, downloaded, videos))
+                self._emit(events.done(scraped, downloaded, videos, saved))
         except events.RunCancelled:
             self._emit(events.log("info", "Run cancelled by user."))
-            self._emit(events.done(scraped, downloaded, videos))
+            self._emit(events.done(scraped, downloaded, videos, saved))
         except Exception as e:
             self._emit(events.error(f"An unexpected error occurred: {str(e)}"))
         finally:
@@ -154,3 +207,48 @@ class Api:
         if path is None:
             return {"found": False, "path": ""}
         return {"found": True, "path": path}
+
+    def _file_dialog(
+        self,
+        dialog_type: int,
+        directory: str,
+        save_filename: str = "",
+        file_types: tuple[str, ...] = (),
+    ) -> str:
+        """Run a native file dialog and return a single path, or "" if cancelled."""
+        if self._window is None:
+            return ""
+        result = self._window.create_file_dialog(
+            dialog_type,
+            directory=directory,
+            save_filename=save_filename,
+            file_types=file_types,
+        )
+        if not result:  # None or empty tuple -> cancelled
+            return ""
+        # Dialogs return a single path typed as a sequence on some GUI backends; normalize.
+        return result if isinstance(result, str) else str(result[0])
+
+    def select_cache_file(self, default_path: str = "") -> str:
+        """Save-file dialog: where to write the metadata cache JSON."""
+        target = Path(default_path) if default_path.strip() else Path("metadata.json")
+        return self._file_dialog(
+            webview.FileDialog.SAVE,
+            directory=str(target.parent),
+            save_filename=target.name,
+            file_types=("JSON File (*.json)", "All files (*.*)"),
+        )
+
+    def select_json_file(self, default_path: str = "") -> str:
+        """Open-file dialog: pick an existing cache JSON for Download mode."""
+        start = Path(default_path.strip()) if default_path.strip() else Path(".")
+        directory = str(start.parent if start.suffix else start)
+        return self._file_dialog(
+            webview.FileDialog.OPEN,
+            directory=directory,
+            file_types=("JSON File (*.json)", "All files (*.*)"),
+        )
+
+    def select_folder(self, default_path: str = "") -> str:
+        """Folder dialog: pick the output directory."""
+        return self._file_dialog(webview.FileDialog.FOLDER, directory=default_path.strip() or ".")
