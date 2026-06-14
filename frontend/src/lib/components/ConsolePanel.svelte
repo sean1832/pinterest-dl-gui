@@ -82,7 +82,8 @@
     </div>
 
     <!-- Asset previews -->
-    <ScrollArea orientation="horizontal" class="border-b border-border bg-card">
+    <!-- type="auto" so the bar shows on overflow; the default "hover" hides it until the cursor enters. -->
+    <ScrollArea type="auto" orientation="horizontal" class="border-b border-border bg-card">
         <div class="flex min-h-[85px] gap-2 p-4">
             {#each runStatus.previews as preview, i (i)}
                 <div class="shrink-0">
