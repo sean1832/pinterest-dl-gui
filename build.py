@@ -52,6 +52,9 @@ def build_release(*, console: bool = False) -> None:
     cmd = [
         sys.executable, "-m", "nuitka",
         "--onefile",
+        # Auto-confirm tool downloads (e.g. the Windows dependency walker) so
+        # non-interactive CI builds do not stall on a prompt and abort.
+        "--assume-yes-for-downloads",
         f"--include-data-dir={WEB_DIR}=web",
         f"--include-data-dir={ROOT / 'assets'}=assets",
         f"--output-dir={dist_dir}",
