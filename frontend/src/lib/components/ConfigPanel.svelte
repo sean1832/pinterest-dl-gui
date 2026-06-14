@@ -96,6 +96,7 @@
             timeout: settings.timeout,
             cookies: settings.cookies,
             ensure_alt: run.strictAlt,
+            ffmpeg_path: settings.ffmpegPath,
             download_streams: run.fetchVideos,
             skip_remux: false,
             caption: run.caption,

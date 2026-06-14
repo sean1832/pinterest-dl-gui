@@ -21,6 +21,7 @@ export interface RunPayload {
     timeout?: number;
     cookies?: string;
     ensure_alt?: boolean;
+    ffmpeg_path?: string;
     download_streams: boolean;
     skip_remux?: boolean;
     caption?: string;

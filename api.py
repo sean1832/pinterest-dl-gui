@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import threading
 from pathlib import Path
@@ -75,6 +76,7 @@ class Api:
             timeout=float(config.get("timeout", 10.0)),
             cookies=(str(config.get("cookies", "")).strip() or None),
             ensure_alt=bool(config.get("ensure_alt", False)),
+            ffmpeg_path=(str(config.get("ffmpeg_path", "")).strip() or None),
             download_streams=bool(config["download_streams"]),
             skip_remux=bool(config.get("skip_remux", False)),
             caption_from_title=bool(config.get("caption_from_title", False)),
@@ -172,11 +174,22 @@ class Api:
                 # === ffmpeg guard: ===
                 # downgrade videos -> images if remux needed but unavailable
                 download_streams = config.download_streams
-                if download_streams and not config.skip_remux and not self.check_ffmpeg()["found"]:
-                    download_streams = False
-                    self._emit(
-                        events.log("warn", "FFmpeg not found; downloading images instead of videos")
-                    )
+                if download_streams and not config.skip_remux:
+                    ffmpeg = self.check_ffmpeg(config.ffmpeg_path)
+                    if not ffmpeg["found"]:
+                        download_streams = False
+                        self._emit(
+                            events.log(
+                                "warn", "FFmpeg not found; downloading images instead of videos"
+                            )
+                        )
+                    elif config.ffmpeg_path:
+                        # The library invokes bare "ffmpeg" via subprocess, so a custom path is
+                        # only honored if its directory is on PATH for the remux step.
+                        ffmpeg_dir = str(Path(str(ffmpeg["path"])).parent)
+                        path_entries = os.environ.get("PATH", "").split(os.pathsep)
+                        if ffmpeg_dir not in path_entries:
+                            os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
 
                 # === download phase ===
                 total = len(media_list)
