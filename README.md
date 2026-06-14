@@ -13,7 +13,7 @@ A desktop GUI for scraping Pinterest media from a URL, built on top of the
 
 <div align="center">
 
-<img src="docs/app_screenshot.png" alt="Application screenshot" width="800">
+<img src="docs/gui_screenshot.png" alt="Application screenshot" width="800">
 
 </div>
 
