@@ -95,6 +95,7 @@
             delay: settings.delay,
             timeout: settings.timeout,
             cookies: settings.cookies,
+            ensure_alt: run.strictAlt,
             download_streams: run.fetchVideos,
             skip_remux: false,
             caption_from_title: false,

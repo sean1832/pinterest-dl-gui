@@ -74,6 +74,7 @@ class Api:
             delay=float(config["delay"]),
             timeout=float(config.get("timeout", 10.0)),
             cookies=(str(config.get("cookies", "")).strip() or None),
+            ensure_alt=bool(config.get("ensure_alt", False)),
             download_streams=bool(config["download_streams"]),
             skip_remux=bool(config.get("skip_remux", False)),
             caption_from_title=bool(config.get("caption_from_title", False)),
@@ -131,7 +132,9 @@ class Api:
                         self._emit(events.media(media.src, media.video_stream is not None))
                     scraped = len(media_list)
                 else:
-                    scraper = PinterestDL.with_api(timeout=config.timeout)
+                    scraper = PinterestDL.with_api(
+                        timeout=config.timeout, ensure_alt=config.ensure_alt
+                    )
                     # Cookies are optional; required only for private boards. Bad path/format
                     # raises here and surfaces as a run error rather than failing silently.
                     if config.cookies:

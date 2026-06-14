@@ -20,6 +20,7 @@ export interface RunPayload {
     delay: number;
     timeout?: number;
     cookies?: string;
+    ensure_alt?: boolean;
     download_streams: boolean;
     skip_remux?: boolean;
     caption_from_title?: boolean;
