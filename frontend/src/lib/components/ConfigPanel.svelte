@@ -32,6 +32,18 @@
 
     const isRunning = $derived(runStatus.status === 'running');
 
+    // Swap the source field when the user switches modes so each mode remembers its own
+    // last-entered value independently.
+    let prevMode = run.mode;
+    $effect(() => {
+        const newMode = run.mode;
+        if (newMode !== prevMode) {
+            run.sourceByMode[prevMode] = run.source;
+            run.source = run.sourceByMode[newMode] ?? '';
+            prevMode = newMode;
+        }
+    });
+
     // The cache path tracks the output directory until the user overrides it (by typing
     // or picking a file); after that it stays put. The timestamp default is resolved in
     // Python only as a fallback when the field is left empty.

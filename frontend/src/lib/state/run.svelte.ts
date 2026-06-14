@@ -4,6 +4,7 @@
 
 interface RunConfig {
 	mode: string;
+	sourceByMode: Record<string, string>;
 	source: string;
 	output: string;
 	limit: number;
@@ -20,6 +21,7 @@ interface RunConfig {
 
 export const run = $state<RunConfig>({
 	mode: "scrape",
+	sourceByMode: { scrape: "", search: "", download: "" },
 	source: "",
 	output: "./downloads",
 	limit: 1,
