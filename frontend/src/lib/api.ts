@@ -34,6 +34,7 @@ export interface PinterestApi {
     select_cache_file(defaultPath: string): Promise<string>;
     select_json_file(defaultPath: string): Promise<string>;
     select_folder(defaultPath: string): Promise<string>;
+    select_file(defaultPath: string): Promise<string>;
 }
 
 declare global {

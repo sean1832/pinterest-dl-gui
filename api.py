@@ -260,3 +260,9 @@ class Api:
     def select_folder(self, default_path: str = "") -> str:
         """Folder dialog: pick the output directory."""
         return self._file_dialog(webview.FileDialog.FOLDER, directory=default_path.strip() or ".")
+
+    def select_file(self, default_path: str = "") -> str:
+        """Open-file dialog: pick any file (used for ffmpeg executable, cookies JSON, etc.)."""
+        start = Path(default_path.strip()) if default_path.strip() else Path(".")
+        directory = str(start.parent if start.is_file() else start)
+        return self._file_dialog(webview.FileDialog.OPEN, directory=directory, file_types=("All files (*.*)",))
