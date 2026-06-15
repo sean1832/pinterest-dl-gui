@@ -302,6 +302,32 @@ class Api:
         Path(target).write_text(json.dumps(cookies, indent=2), encoding="utf-8")
         return {"success": True, "path": target, "message": f"Saved {len(cookies)} cookies."}
 
+    def check_cookie_status(self, path: str) -> dict:
+        """Report whether a saved cookies JSON is still valid based on stored expiry.
+
+        Args:
+            path (str): The path to the cookies JSON file.
+
+        Returns:
+            dict: {"state": "valid"|"expired"|"unknown", "expiry": int|None}
+            - "valid" means the cookies are not expired as of the check time.
+            - "expired" means the cookies are expired as of the check time.
+            - "unknown" means the cookies could not be loaded or have no expiry info.
+        """
+        try:
+            cookies = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"state": "unknown", "expiry": None}
+
+        # Session is only as good as its earliest-expiring cookie; ignore session cookies (no expiry).
+        expiries = [c["expiry"] for c in cookies if c.get("expiry")]
+        if not expiries:
+            return {"state": "unknown", "expiry": None}
+
+        earliest = min(expiries)
+        state = "expired" if earliest <= int(time.time()) else "valid"
+        return {"state": state, "expiry": earliest}
+
     @staticmethod
     def _cookie_domain(cookie: SimpleCookie) -> str:
         # pywebview returns http.cookies.SimpleCookie, one morsel each

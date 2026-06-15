@@ -1,7 +1,13 @@
 <script lang="ts">
     import { cn } from '$lib/utils';
     import { getApi } from '$lib/api';
-    import { settings, checkFfmpeg, type FfmpegStatus } from '$lib/state/settings.svelte';
+    import {
+        settings,
+        checkFfmpeg,
+        checkCookieStatus,
+        type FfmpegStatus,
+        type CookieStatus
+    } from '$lib/state/settings.svelte';
     import * as Dialog from '$lib/components/ui/dialog';
     import { Button } from '$lib/components/ui/button';
     import { Input } from '$lib/components/ui/input';
@@ -28,13 +34,32 @@
     };
     const status = $derived(statusMeta[settings.ffmpegStatus]);
 
+    const cookieMeta: Record<CookieStatus, { label: string; class: string }> = {
+        valid: { label: 'Valid', class: 'bg-success/10 text-success' },
+        expired: { label: 'Expired', class: 'bg-destructive/10 text-destructive' },
+        checking: { label: 'Checking', class: 'bg-muted text-muted-foreground' },
+        unknown: { label: 'Unknown', class: 'bg-muted text-muted-foreground' }
+    };
+    const cookie = $derived(cookieMeta[settings.cookieStatus]);
+
+    function formatExpiry(unixSeconds: number): string {
+        return new Date(unixSeconds * 1000).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
     let capturing = $state(false); // disable capture button + show spinner while in progress
 
     async function browseCookies() {
         const api = getApi();
         if (!api) return;
         const path = await api.select_json_file(settings.cookies);
-        if (path) settings.cookies = path;
+        if (path) {
+            settings.cookies = path;
+            await checkCookieStatus();
+        }
     }
 
     async function captureCookies() {
@@ -45,6 +70,7 @@
             const result = await api.capture_cookies();
             if (result.success) {
                 settings.cookies = result.path;
+                await checkCookieStatus();
             } else {
                 console.warn(`Cookie capture failed: ${result.message}`); // non-critical, so just log it
             }
@@ -130,6 +156,36 @@
                             {/if}
                         </Button>
                     </div>
+
+                    {#if settings.cookies}
+                        <div class="flex items-center gap-2">
+                            <Badge class={cn('border-transparent', cookie.class)}>
+                                {#if settings.cookieStatus === 'valid'}
+                                    <CircleCheck />
+                                {:else if settings.cookieStatus === 'expired'}
+                                    <TriangleAlert />
+                                {:else if settings.cookieStatus === 'checking'}
+                                    <LoaderCircle class="animate-spin" />
+                                {:else}
+                                    <CircleQuestionMark />
+                                {/if}
+                                {cookie.label}
+                            </Badge>
+                            {#if settings.cookieStatus === 'expired'}
+                                <span class="text-destructive"
+                                    >Session expired - recapture to refresh.</span
+                                >
+                            {:else if settings.cookieStatus === 'valid' && settings.cookieExpiry}
+                                <span class="text-muted-foreground"
+                                    >Valid until {formatExpiry(settings.cookieExpiry)}</span
+                                >
+                            {:else if settings.cookieStatus === 'unknown'}
+                                <span class="text-muted-foreground"
+                                    >No expiry info - validity unknown.</span
+                                >
+                            {/if}
+                        </div>
+                    {/if}
                 </div>
             </section>
 
