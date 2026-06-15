@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import sys
 import threading
 import time
 from email.utils import parsedate_to_datetime  # WebView2 hands back RFC-date expiry strings
@@ -12,6 +13,9 @@ from pinterest_dl import PinterestMedia
 
 from core import events
 from core.scrape_config import ScrapeConfig
+
+
+_EXE_DIR = str(Path(sys.executable).parent)
 
 
 class Api:
@@ -292,7 +296,7 @@ class Api:
 
         target = self._file_dialog(
             webview.FileDialog.SAVE,
-            directory=".",
+            directory=_EXE_DIR,
             save_filename="cookies.json",
             file_types=("JSON File (*.json)", "All files (*.*)"),
         )
@@ -406,7 +410,7 @@ class Api:
 
     def select_cache_file(self, default_path: str = "") -> str:
         """Save-file dialog: where to write the metadata cache JSON."""
-        target = Path(default_path) if default_path.strip() else Path("metadata.json")
+        target = Path(default_path) if default_path.strip() else Path(_EXE_DIR) / "metadata.json"
         return self._file_dialog(
             webview.FileDialog.SAVE,
             directory=str(target.parent),
@@ -416,7 +420,7 @@ class Api:
 
     def select_json_file(self, default_path: str = "") -> str:
         """Open-file dialog: pick an existing cache JSON for Download mode."""
-        start = Path(default_path.strip()) if default_path.strip() else Path(".")
+        start = Path(default_path.strip()) if default_path.strip() else Path(_EXE_DIR)
         directory = str(start.parent if start.suffix else start)
         return self._file_dialog(
             webview.FileDialog.OPEN,
@@ -426,11 +430,11 @@ class Api:
 
     def select_folder(self, default_path: str = "") -> str:
         """Folder dialog: pick the output directory."""
-        return self._file_dialog(webview.FileDialog.FOLDER, directory=default_path.strip() or ".")
+        return self._file_dialog(webview.FileDialog.FOLDER, directory=default_path.strip() or _EXE_DIR)
 
     def select_file(self, default_path: str = "") -> str:
         """Open-file dialog: pick any file (used for ffmpeg executable, cookies JSON, etc.)."""
-        start = Path(default_path.strip()) if default_path.strip() else Path(".")
+        start = Path(default_path.strip()) if default_path.strip() else Path(_EXE_DIR)
         directory = str(start.parent if start.is_file() else start)
         return self._file_dialog(
             webview.FileDialog.OPEN, directory=directory, file_types=("All files (*.*)",)
