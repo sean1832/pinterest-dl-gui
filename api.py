@@ -2,6 +2,9 @@ import json
 import os
 import shutil
 import threading
+import time
+from email.utils import parsedate_to_datetime  # WebView2 hands back RFC-date expiry strings
+from http.cookies import SimpleCookie
 from pathlib import Path
 
 import webview
@@ -187,7 +190,9 @@ class Api:
                         ffmpeg_dir = str(Path(str(ffmpeg["path"])).parent)
                         path_entries = os.environ.get("PATH", "").split(os.pathsep)
                         if ffmpeg_dir not in path_entries:
-                            os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+                            os.environ["PATH"] = (
+                                ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+                            )
 
                 # === download phase ===
                 total = len(media_list)
@@ -230,6 +235,108 @@ class Api:
         finally:
             self._stop.clear()  # ensure reset for the next run, even if this one errored out
             self._thread = None  # mark no active run
+
+    def capture_cookies(self) -> dict:
+        """
+        Open a Pinterest login window, wait for the auth cookie, and save it as a cookies JSON.
+        Runs on the `js_api` worker thread;
+        blocking here is fine and keeps the GUI responsive.
+
+        Returns:
+            dict: {"success": bool, "path": str, "message": str}
+        """
+        if self._window is None:
+            return {"success": False, "path": "", "message": "Window not initialized."}
+
+        login_window = webview.create_window(
+            "Login to Pinterest",
+            "https://www.pinterest.com/login/",
+            width=520,
+            height=720,
+        )
+        if login_window is None:
+            return {"success": False, "path": "", "message": "Failed to create login window."}
+
+        # The user may give up and close the window. Treat that as a clean cancel rather than an error.
+        closed = threading.Event()
+        login_window.events.closed += lambda: closed.set()
+
+        cookies: list[dict] = []
+        deadline = time.monotonic() + 300  # 5 min cap so a walked-away user can't hang the thread
+        while not closed.is_set() and time.monotonic() < deadline:
+            try:
+                raw = (
+                    login_window.get_cookies()
+                )  # blocks until cookies are available or the window is closed
+            except Exception:
+                break  # window torn down mid-call. Closed handler will also fire.
+
+            if self._is_authenticated(raw):
+                for cookie in raw:
+                    if "pinterest.com" in self._cookie_domain(cookie):
+                        cookies.append(self._to_pdl_cookie(cookie))
+                break
+
+            # poll every second until we see the auth cookie or the window is closed
+            time.sleep(1.0)
+
+        if not closed.is_set():
+            login_window.destroy()  # close the login window if it's still open
+
+        if not cookies:
+            return {
+                "success": False,
+                "path": "",
+                "message": "Login cancelled or authentication failed.",
+            }
+
+        target = self._file_dialog(
+            webview.FileDialog.SAVE,
+            directory=".",
+            save_filename="cookies.json",
+            file_types=("JSON File (*.json)", "All files (*.*)"),
+        )
+        if not target:
+            return {"success": False, "path": "", "message": "Save cancelled."}
+
+        Path(target).write_text(json.dumps(cookies, indent=2), encoding="utf-8")
+        return {"success": True, "path": target, "message": f"Saved {len(cookies)} cookies."}
+
+    @staticmethod
+    def _cookie_domain(cookie: SimpleCookie) -> str:
+        # pywebview returns http.cookies.SimpleCookie, one morsel each
+        _, morsel = next(iter(cookie.items()))
+        return morsel["domain"] or ""
+
+    @staticmethod
+    def _is_authenticated(cookies: list[SimpleCookie]) -> bool:
+        # _pinterest_sess exists for anonymous visitors too; _auth=1 is the real login flag
+        for cookie in cookies:
+            name, morsel = next(iter(cookie.items()))
+            if name == "_auth" and morsel.value == "1":
+                return True
+        return False
+
+    @staticmethod
+    def _to_pdl_cookie(cookie: SimpleCookie) -> dict:
+        # map a SimpleCookie morsel to pinterest-dl's on-disk format (CookieJar.from_cookies)
+        name, morsel = next(iter(cookie.items()))
+        expires = morsel["expires"]
+        expiry = None
+        if expires:
+            try:
+                expiry = int(parsedate_to_datetime(expires).timestamp())
+            except (TypeError, ValueError):
+                pass  # if the date is malformed, just omit the expiry rather than failing outright
+
+        return {
+            "name": name,
+            "value": morsel.value,
+            "domain": morsel["domain"],
+            "path": morsel["path"] or "/",
+            "secure": bool(morsel["secure"]),
+            "expiry": expiry,
+        }
 
     def get_core_version(self) -> str:
         """Get the version of the embedded pinterest-dl core."""
@@ -299,4 +406,6 @@ class Api:
         """Open-file dialog: pick any file (used for ffmpeg executable, cookies JSON, etc.)."""
         start = Path(default_path.strip()) if default_path.strip() else Path(".")
         directory = str(start.parent if start.is_file() else start)
-        return self._file_dialog(webview.FileDialog.OPEN, directory=directory, file_types=("All files (*.*)",))
+        return self._file_dialog(
+            webview.FileDialog.OPEN, directory=directory, file_types=("All files (*.*)",)
+        )

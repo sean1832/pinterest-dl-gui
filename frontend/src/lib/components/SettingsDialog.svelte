@@ -28,11 +28,31 @@
     };
     const status = $derived(statusMeta[settings.ffmpegStatus]);
 
+    let capturing = $state(false); // disable capture button + show spinner while in progress
+
     async function browseCookies() {
         const api = getApi();
         if (!api) return;
         const path = await api.select_json_file(settings.cookies);
         if (path) settings.cookies = path;
+    }
+
+    async function captureCookies() {
+        const api = getApi();
+        if (!api) return;
+        capturing = true;
+        try {
+            const result = await api.capture_cookies();
+            if (result.success) {
+                settings.cookies = result.path;
+            } else {
+                console.warn(`Cookie capture failed: ${result.message}`); // non-critical, so just log it
+            }
+        } catch (err) {
+            console.error(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+            capturing = false; // re-enable button regardless of outcome
+        }
     }
 
     async function browseFfmpeg() {
@@ -92,10 +112,22 @@
                         />
                         <Button
                             variant="outline"
-                            class="shrink-0 rounded-l-none"
+                            class="shrink-0 rounded-none"
                             onclick={browseCookies}
                         >
                             <FolderOpen />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            class="shrink-0 rounded-l-none"
+                            onclick={captureCookies}
+                            disabled={capturing}
+                        >
+                            {#if capturing}
+                                <LoaderCircle class="animate-spin" />
+                            {:else}
+                                <KeyRound />
+                            {/if}
                         </Button>
                     </div>
                 </div>
