@@ -1,0 +1,4 @@
+# Build-only dependencies for producing a release executable.
+# Includes the runtime deps plus the Nuitka compiler.
+-r requirements.txt
+nuitka

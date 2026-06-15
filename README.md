@@ -67,7 +67,11 @@ required:
 
 ## Build a release
 
+Building a standalone executable additionally requires Nuitka, declared in
+`requirements-build.txt`:
+
 ```bash
+pip install -r requirements-build.txt
 python build.py --release --version 1.0.0
 ```
 

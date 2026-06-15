@@ -38,8 +38,10 @@ def _ensure_nuitka() -> None:
     try:
         import nuitka  # noqa: F401
     except ImportError:
-        print(">>> Nuitka not found, installing...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "nuitka"], check=True)
+        raise RuntimeError(
+            "Nuitka is required for --release builds but is not installed. "
+            "Install the build dependencies with: pip install -r requirements-build.txt"
+        )
 
 
 def build_release(*, console: bool = False) -> None:
