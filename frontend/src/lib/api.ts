@@ -3,6 +3,17 @@ export interface FfmpegResult {
     path: string;
 }
 
+export interface CaptureCookiesResult {
+    success: boolean;
+    path: string;
+    message: string;
+}
+
+export interface CookieStatusResult {
+    state: "valid" | "expired" | "unknown";
+    expiry: number | null; // Unix seconds of the earliest-expiring cookie, or null when unknown
+}
+
 export type RunEvent = 
     | { type: "progress"; phase: "scrape" | "download"; current: number; total: number }
     | { type: "log"; level: "info" | "warn" | "error"; message: string }
@@ -34,6 +45,8 @@ export interface RunPayload {
 export interface PinterestApi {
     get_core_version(): Promise<string>;
     check_ffmpeg(customPath: string | null): Promise<FfmpegResult>;
+    capture_cookies(): Promise<CaptureCookiesResult>;
+    check_cookie_status(path: string): Promise<CookieStatusResult>;
     start_run(config: RunPayload): Promise<{ started: boolean;}>;
     terminate(): Promise<void>;
     select_cache_file(defaultPath: string): Promise<string>;

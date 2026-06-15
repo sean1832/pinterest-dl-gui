@@ -1,7 +1,11 @@
 import json
 import os
 import shutil
+import sys
 import threading
+import time
+from email.utils import parsedate_to_datetime  # WebView2 hands back RFC-date expiry strings
+from http.cookies import SimpleCookie
 from pathlib import Path
 
 import webview
@@ -9,6 +13,9 @@ from pinterest_dl import PinterestMedia
 
 from core import events
 from core.scrape_config import ScrapeConfig
+
+
+_EXE_DIR = str(Path(sys.executable).parent)
 
 
 class Api:
@@ -187,7 +194,9 @@ class Api:
                         ffmpeg_dir = str(Path(str(ffmpeg["path"])).parent)
                         path_entries = os.environ.get("PATH", "").split(os.pathsep)
                         if ffmpeg_dir not in path_entries:
-                            os.environ["PATH"] = ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+                            os.environ["PATH"] = (
+                                ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
+                            )
 
                 # === download phase ===
                 total = len(media_list)
@@ -231,6 +240,134 @@ class Api:
             self._stop.clear()  # ensure reset for the next run, even if this one errored out
             self._thread = None  # mark no active run
 
+    def capture_cookies(self) -> dict:
+        """
+        Open a Pinterest login window, wait for the auth cookie, and save it as a cookies JSON.
+        Runs on the `js_api` worker thread;
+        blocking here is fine and keeps the GUI responsive.
+
+        Returns:
+            dict: {"success": bool, "path": str, "message": str}
+        """
+        if self._window is None:
+            return {"success": False, "path": "", "message": "Window not initialized."}
+
+        login_window = webview.create_window(
+            "Login to Pinterest",
+            "https://www.pinterest.com/login/",
+            width=520,
+            height=720,
+        )
+        if login_window is None:
+            return {"success": False, "path": "", "message": "Failed to create login window."}
+
+        # The user may give up and close the window. Treat that as a clean cancel rather than an error.
+        closed = threading.Event()
+        login_window.events.closed += lambda: closed.set()
+
+        cookies: list[dict] = []
+        deadline = time.monotonic() + 300  # 5 min cap so a walked-away user can't hang the thread
+        while not closed.is_set() and time.monotonic() < deadline:
+            try:
+                raw = (
+                    login_window.get_cookies()
+                )  # blocks until cookies are available or the window is closed
+            except Exception:
+                break  # window torn down mid-call. Closed handler will also fire.
+
+            if self._is_authenticated(raw):
+                for cookie in raw:
+                    if "pinterest.com" in self._cookie_domain(cookie):
+                        cookies.append(self._to_pdl_cookie(cookie))
+                break
+
+            # poll every second until we see the auth cookie or the window is closed
+            time.sleep(1.0)
+
+        if not closed.is_set():
+            login_window.destroy()  # close the login window if it's still open
+
+        if not cookies:
+            return {
+                "success": False,
+                "path": "",
+                "message": "Login cancelled or authentication failed.",
+            }
+
+        target = self._file_dialog(
+            webview.FileDialog.SAVE,
+            directory=_EXE_DIR,
+            save_filename="cookies.json",
+            file_types=("JSON File (*.json)", "All files (*.*)"),
+        )
+        if not target:
+            return {"success": False, "path": "", "message": "Save cancelled."}
+
+        Path(target).write_text(json.dumps(cookies, indent=2), encoding="utf-8")
+        return {"success": True, "path": target, "message": f"Saved {len(cookies)} cookies."}
+
+    def check_cookie_status(self, path: str) -> dict:
+        """Report whether a saved cookies JSON is still valid based on stored expiry.
+
+        Args:
+            path (str): The path to the cookies JSON file.
+
+        Returns:
+            dict: {"state": "valid"|"expired"|"unknown", "expiry": int|None}
+            - "valid" means the cookies are not expired as of the check time.
+            - "expired" means the cookies are expired as of the check time.
+            - "unknown" means the cookies could not be loaded or have no expiry info.
+        """
+        try:
+            cookies = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"state": "unknown", "expiry": None}
+
+        # Session is only as good as its earliest-expiring cookie; ignore session cookies (no expiry).
+        expiries = [c["expiry"] for c in cookies if c.get("expiry")]
+        if not expiries:
+            return {"state": "unknown", "expiry": None}
+
+        earliest = min(expiries)
+        state = "expired" if earliest <= int(time.time()) else "valid"
+        return {"state": state, "expiry": earliest}
+
+    @staticmethod
+    def _cookie_domain(cookie: SimpleCookie) -> str:
+        # pywebview returns http.cookies.SimpleCookie, one morsel each
+        _, morsel = next(iter(cookie.items()))
+        return morsel["domain"] or ""
+
+    @staticmethod
+    def _is_authenticated(cookies: list[SimpleCookie]) -> bool:
+        # _pinterest_sess exists for anonymous visitors too; _auth=1 is the real login flag
+        for cookie in cookies:
+            name, morsel = next(iter(cookie.items()))
+            if name == "_auth" and morsel.value == "1":
+                return True
+        return False
+
+    @staticmethod
+    def _to_pdl_cookie(cookie: SimpleCookie) -> dict:
+        # map a SimpleCookie morsel to pinterest-dl's on-disk format (CookieJar.from_cookies)
+        name, morsel = next(iter(cookie.items()))
+        expires = morsel["expires"]
+        expiry = None
+        if expires:
+            try:
+                expiry = int(parsedate_to_datetime(expires).timestamp())
+            except (TypeError, ValueError):
+                pass  # if the date is malformed, just omit the expiry rather than failing outright
+
+        return {
+            "name": name,
+            "value": morsel.value,
+            "domain": morsel["domain"],
+            "path": morsel["path"] or "/",
+            "secure": bool(morsel["secure"]),
+            "expiry": expiry,
+        }
+
     def get_core_version(self) -> str:
         """Get the version of the embedded pinterest-dl core."""
         # Import and call __version__ here to avoid importing pinterest_dl at the module level.
@@ -273,7 +410,7 @@ class Api:
 
     def select_cache_file(self, default_path: str = "") -> str:
         """Save-file dialog: where to write the metadata cache JSON."""
-        target = Path(default_path) if default_path.strip() else Path("metadata.json")
+        target = Path(default_path) if default_path.strip() else Path(_EXE_DIR) / "metadata.json"
         return self._file_dialog(
             webview.FileDialog.SAVE,
             directory=str(target.parent),
@@ -283,7 +420,7 @@ class Api:
 
     def select_json_file(self, default_path: str = "") -> str:
         """Open-file dialog: pick an existing cache JSON for Download mode."""
-        start = Path(default_path.strip()) if default_path.strip() else Path(".")
+        start = Path(default_path.strip()) if default_path.strip() else Path(_EXE_DIR)
         directory = str(start.parent if start.suffix else start)
         return self._file_dialog(
             webview.FileDialog.OPEN,
@@ -293,10 +430,12 @@ class Api:
 
     def select_folder(self, default_path: str = "") -> str:
         """Folder dialog: pick the output directory."""
-        return self._file_dialog(webview.FileDialog.FOLDER, directory=default_path.strip() or ".")
+        return self._file_dialog(webview.FileDialog.FOLDER, directory=default_path.strip() or _EXE_DIR)
 
     def select_file(self, default_path: str = "") -> str:
         """Open-file dialog: pick any file (used for ffmpeg executable, cookies JSON, etc.)."""
-        start = Path(default_path.strip()) if default_path.strip() else Path(".")
+        start = Path(default_path.strip()) if default_path.strip() else Path(_EXE_DIR)
         directory = str(start.parent if start.is_file() else start)
-        return self._file_dialog(webview.FileDialog.OPEN, directory=directory, file_types=("All files (*.*)",))
+        return self._file_dialog(
+            webview.FileDialog.OPEN, directory=directory, file_types=("All files (*.*)",)
+        )

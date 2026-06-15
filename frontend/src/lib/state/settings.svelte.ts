@@ -1,9 +1,12 @@
 import { getApi, onBridgeReady } from "$lib/api";
 
 export type FfmpegStatus = "unknown" | "checking" | "found" | "missing";
+export type CookieStatus = "unknown" | "checking" | "valid" | "expired";
 
 interface Settings {
 	cookies: string;
+	cookieStatus: CookieStatus;
+	cookieExpiry: number | null; // Unix seconds of the earliest-expiring cookie, or null when unknown
 	ffmpegPath: string;
 	ffmpegStatus: FfmpegStatus;
 	ffmpegResolved: string;
@@ -15,6 +18,8 @@ const STORAGE_KEY = "pdl.settings";
 
 export const settings = $state<Settings>({
 	cookies: "",
+	cookieStatus: "unknown",
+	cookieExpiry: null,
 	ffmpegPath: "",
 	ffmpegStatus: "unknown",
 	ffmpegResolved: "",
@@ -51,7 +56,11 @@ $effect.root(() => {
 });
 
 // Auto-check on bridge ready so the dialog never opens showing "Unknown" for the first time.
-onBridgeReady(() => checkFfmpeg());
+// Cookies are restored from localStorage synchronously above, so the path is set by now.
+onBridgeReady(() => {
+	checkFfmpeg();
+	checkCookieStatus();
+});
 
 // Resolve FFmpeg via the Python bridge. Under `vite dev` (no pywebview) the status stays
 // "unknown" so the dev preview still runs; the real check runs inside the packaged app.
@@ -70,5 +79,26 @@ export async function checkFfmpeg(): Promise<void> {
 		// Bridge call failed - surface as missing so the user can fix the path.
 		settings.ffmpegStatus = "missing";
 		settings.ffmpegResolved = "";
+	}
+}
+
+// Check the saved cookies file's expiry via the Python bridge. With no path set (or under
+// `vite dev` without pywebview) the status stays "unknown" so no badge is shown.
+export async function checkCookieStatus(): Promise<void> {
+	const api = getApi();
+	if (!api || !settings.cookies.trim()) {
+		settings.cookieStatus = "unknown";
+		settings.cookieExpiry = null;
+		return;
+	}
+	settings.cookieStatus = "checking";
+	try {
+		const result = await api.check_cookie_status(settings.cookies);
+		settings.cookieStatus = result.state;
+		settings.cookieExpiry = result.expiry;
+	} catch {
+		// Bridge call failed - fall back to unknown rather than a false "expired".
+		settings.cookieStatus = "unknown";
+		settings.cookieExpiry = null;
 	}
 }
