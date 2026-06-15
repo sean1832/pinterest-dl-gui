@@ -1,3 +1,4 @@
+import ctypes
 import json
 import os
 import shutil
@@ -15,7 +16,15 @@ from core import events
 from core.scrape_config import ScrapeConfig
 
 
-_EXE_DIR = str(Path(sys.executable).parent)
+def _get_exe_dir() -> str:
+    if sys.platform == "win32":
+        buf = ctypes.create_unicode_buffer(32768)
+        ctypes.windll.kernel32.GetModuleFileNameW(None, buf, len(buf))
+        return str(Path(buf.value).parent)
+    return str(Path(os.path.abspath(sys.argv[0])).parent)
+
+
+_EXE_DIR = _get_exe_dir()
 
 
 class Api:
@@ -430,7 +439,17 @@ class Api:
 
     def select_folder(self, default_path: str = "") -> str:
         """Folder dialog: pick the output directory."""
-        return self._file_dialog(webview.FileDialog.FOLDER, directory=default_path.strip() or _EXE_DIR)
+        path = default_path.strip()
+        if path:
+            resolved = Path(path)
+            if not resolved.is_absolute():
+                resolved = Path(_EXE_DIR) / resolved
+        else:
+            resolved = Path(_EXE_DIR)
+        # Walk up to the nearest existing ancestor so the dialog has a valid starting point.
+        while not resolved.exists() and resolved != resolved.parent:
+            resolved = resolved.parent
+        return self._file_dialog(webview.FileDialog.FOLDER, directory=str(resolved))
 
     def select_file(self, default_path: str = "") -> str:
         """Open-file dialog: pick any file (used for ffmpeg executable, cookies JSON, etc.)."""
