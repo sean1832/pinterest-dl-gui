@@ -22,7 +22,8 @@
     });
 
     // --- Resizable left config pane (horizontal split) ------------------------
-    const MIN_LEFT = 360;
+    const DEFAULT_LEFT = 480;
+    const MIN_LEFT = 420;
     const MAX_LEFT = 720;
     const LEFT_WIDTH_KEY = 'pdl.leftWidth';
 
@@ -30,7 +31,7 @@
         return Math.min(MAX_LEFT, Math.max(MIN_LEFT, px));
     }
 
-    let leftWidth = $state(clampLeft(Number(localStorage.getItem(LEFT_WIDTH_KEY)) || 450));
+    let leftWidth = $state(clampLeft(Number(localStorage.getItem(LEFT_WIDTH_KEY)) || DEFAULT_LEFT));
     let dragging = $state(false);
 
     function persistLeftWidth() {
