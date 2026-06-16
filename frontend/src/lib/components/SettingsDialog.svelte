@@ -16,6 +16,7 @@
     import { Badge } from '$lib/components/ui/badge';
     import { Separator } from '$lib/components/ui/separator';
     import InfoTooltip from '$lib/components/info-tooltip.svelte';
+    import TooltipButton from '$lib/components/tooltip-button.svelte';
     import Settings from '@lucide/svelte/icons/settings';
     import KeyRound from '@lucide/svelte/icons/key-round';
     import Film from '@lucide/svelte/icons/film';
@@ -144,7 +145,8 @@
                         >
                             <FolderOpen />
                         </Button>
-                        <Button
+                        <TooltipButton
+                            tooltip="Capture a new cookies from Pinterest by logging in through an embedded browser window."
                             variant="outline"
                             class="shrink-0 rounded-l-none"
                             onclick={captureCookies}
@@ -155,7 +157,7 @@
                             {:else}
                                 <KeyRound />
                             {/if}
-                        </Button>
+                        </TooltipButton>
                     </div>
 
                     {#if settings.cookies}
@@ -226,14 +228,15 @@
                             {settings.ffmpegResolved || 'Not resolved'}
                         </span>
                     </div>
-                    <Button
+                    <TooltipButton
+                        tooltip="Re-check FFmpeg availability"
                         variant="outline"
                         size="sm"
                         class="shrink-0"
                         onclick={() => checkFfmpeg()}
                     >
                         <RefreshCw />
-                    </Button>
+                    </TooltipButton>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <Label for="set-ffmpeg">Custom FFmpeg Path</Label>
