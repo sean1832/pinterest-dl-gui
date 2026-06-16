@@ -151,21 +151,21 @@
             >
                 <ToggleGroupItem
                     value="scrape"
-                    class="flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                    class="cursor-pointer flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
                 >
                     <Download class="size-3.5" />
                     Scrape
                 </ToggleGroupItem>
                 <ToggleGroupItem
                     value="search"
-                    class="flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                    class="cursor-pointer flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
                 >
                     <Search class="size-3.5" />
                     Search
                 </ToggleGroupItem>
                 <ToggleGroupItem
                     value="download"
-                    class="flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                    class="cursor-pointer flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
                 >
                     <FileDown class="size-3.5" />
                     Download
@@ -230,12 +230,7 @@
                     {#if showLimit}
                         <div class="flex flex-1 flex-col gap-1.5">
                             <Label for="limit">Limit</Label>
-                            <NumberInput
-                                id="limit"
-                                bind:value={run.limit}
-                                min={1}
-                                max={5000}
-                            />
+                            <NumberInput id="limit" bind:value={run.limit} min={1} max={5000} />
                         </div>
                     {/if}
                 </div>
@@ -257,17 +252,9 @@
                         desc="Discard assets smaller than dimensions (0 disables)."
                     >
                         <div class="flex items-center gap-2">
-                            <NumberInput
-                                bind:value={run.resW}
-                                min={0}
-                                class="w-28"
-                            />
+                            <NumberInput bind:value={run.resW} min={0} class="w-28" />
                             <span class="text-muted-foreground">x</span>
-                            <NumberInput
-                                bind:value={run.resH}
-                                min={0}
-                                class="w-28"
-                            />
+                            <NumberInput bind:value={run.resH} min={0} class="w-28" />
                         </div>
                     </OptionRow>
 
@@ -287,10 +274,7 @@
                         </Select.Root>
                     </OptionRow>
 
-                    <OptionRow
-                        title="Strict Alt-Text"
-                        desc="Drop assets lacking valid captions."
-                    >
+                    <OptionRow title="Strict Alt-Text" desc="Drop assets lacking valid captions.">
                         <Switch bind:checked={run.strictAlt} />
                     </OptionRow>
                 </div>
