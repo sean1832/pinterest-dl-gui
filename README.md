@@ -67,13 +67,49 @@ required:
 
 ## Build a release
 
-Building a standalone executable additionally requires Nuitka, declared in
+Building an executable additionally requires Nuitka, declared in
 `requirements-build.txt`:
 
 ```bash
 pip install -r requirements-build.txt
 python build.py --release --version 1.0.0
 ```
+
+`--release` produces a standalone folder under `dist/app.dist/`. This is the
+recommended build: it runs in place and starts fast.
+
+From that standalone folder you can produce two distribution artifacts:
+
+```bash
+python build.py --zip --version 1.0.0        # dist/pinterest-dl-gui_1.0.0_x64.zip
+python build.py --installer --version 1.0.0  # dist/pinterest-dl-gui_1.0.0_x64_setup.exe
+```
+
+- `--zip` packs the folder into a portable, grab-and-run archive.
+- `--installer` wraps it in a Windows installer (Start Menu shortcut +
+  uninstaller). This requires [Inno Setup](https://jrsoftware.org/isdl.php) 6 or
+  7; the build invokes its `ISCC.exe` compiler with the script in `installer.iss`.
+
+Both flags imply `--release` and can be combined (`--zip --installer`).
+
+For a single portable exe instead, pass `--onefile`:
+
+```bash
+python build.py --onefile --version 1.0.0  # dist/pinterest-dl-gui_1.0.0_x64_portable.exe
+```
+
+The onefile build is one self-contained exe, but it unpacks to a temp directory
+on every launch, so startup is slower than the standalone folder.
+
+To produce every artifact at once, combine the flags:
+
+```bash
+python build.py --onefile --zip --installer --version 1.0.0
+```
+
+The onefile and standalone builds need separate Nuitka compiles (a onefile
+build's `app.dist` holds a DLL payload, not a runnable exe), but the second
+compile reuses Nuitka's C build cache, so it is much cheaper than a cold build.
 
 ## Tech stack
 

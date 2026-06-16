@@ -31,15 +31,34 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements-build.txt
 
-      - name: Build executable
-        run: python build.py --release --version ${{ steps.version.outputs.version }}
+      - name: Build all artifacts
+        # One command builds the standalone zip + installer and the portable
+        # onefile exe. The onefile and standalone passes need separate Nuitka
+        # compiles, but the second reuses the C build cache. Inno Setup is
+        # preinstalled on the windows-latest runner, so ISCC.exe is found
+        # automatically.
+        run: python build.py --onefile --zip --installer --version ${{ steps.version.outputs.version }}
 
-      - name: Package artifact
+      - name: Bundle portable archive
         shell: pwsh
-        # exe keeps its name; bundle it with the license into a versioned zip
-        run: Compress-Archive -Path dist/pinterest-dl.exe, LICENSE -DestinationPath "dist/pinterest-dl-gui_windows_${{ steps.version.outputs.version }}.zip"
+        # The onefile exe ships as a zip alongside the EULA and license so users
+        # can read the terms without running the exe. The standalone zip already
+        # carries these files (bundled by build.py); the portable exe does not.
+        # Stage the files under a folder so the zip extracts cleanly, matching the
+        # standalone zip's layout.
+        env:
+          STEM: pinterest-dl-gui_${{ steps.version.outputs.version }}_x64
+        run: |
+          $dir = "dist/${env:STEM}_portable"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item "dist/${env:STEM}_portable.exe", EULA.txt, LICENSE -Destination $dir
+          Compress-Archive -Path $dir -DestinationPath "dist/${env:STEM}_portable.zip" -Force
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
+        # The windows-latest runner is x64, so build.py tags artifacts _x64.
         with:
-          files: dist/pinterest-dl-gui_windows_${{ steps.version.outputs.version }}.zip
+          files: |
+            dist/pinterest-dl-gui_${{ steps.version.outputs.version }}_x64.zip
+            dist/pinterest-dl-gui_${{ steps.version.outputs.version }}_x64_setup.exe
+            dist/pinterest-dl-gui_${{ steps.version.outputs.version }}_x64_portable.zip
