@@ -35,9 +35,5 @@ export const run = $state<RunConfig>({
 	skipDownload: false,
 });
 
-export const captionItems: { value: string; label: string }[] = [
-	{ value: "none", label: "None" },
-	{ value: "txt", label: "TXT Sidecar" },
-	{ value: "json", label: "JSON Sidecar" },
-	{ value: "metadata", label: "Embed EXIF" },
-];
+// Caption strategy values. Labels are localized via i18n (config.captions, keyed by value).
+export const captionValues = ["none", "txt", "json", "metadata"] as const;

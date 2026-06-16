@@ -1,6 +1,7 @@
 <script lang="ts">
     import { cn } from '$lib/utils';
-    import { run, captionItems } from '$lib/state/run.svelte';
+    import { run, captionValues } from '$lib/state/run.svelte';
+    import { i18n } from '$lib/i18n/index.svelte';
     import { OptionRow, OptionGroup, OptionGroupSub } from '$lib/components/ui/option-row';
     import SettingsDialog from '$lib/components/SettingsDialog.svelte';
     import { Button } from '$lib/components/ui/button';
@@ -26,8 +27,9 @@
 
     const showLimit = $derived(run.mode !== 'download');
     const showBrowseSource = $derived(run.mode === 'download');
+    // run.caption is a plain string; index the localized caption map (cast) and fall back.
     const captionLabel = $derived(
-        captionItems.find((i) => i.value === run.caption)?.label ?? 'Select'
+        (i18n.m.config.captions as Record<string, string>)[run.caption] ?? i18n.m.common.select
     );
 
     const isRunning = $derived(runStatus.status === 'running');
@@ -155,34 +157,34 @@
                     class="cursor-pointer flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
                 >
                     <Download class="size-3.5" />
-                    Scrape
+                    {i18n.m.mode.scrape}
                 </ToggleGroupItem>
                 <ToggleGroupItem
                     value="search"
                     class="cursor-pointer flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
                 >
                     <Search class="size-3.5" />
-                    Search
+                    {i18n.m.mode.search}
                 </ToggleGroupItem>
                 <ToggleGroupItem
                     value="download"
                     class="cursor-pointer flex-1 gap-1.5 text-muted-foreground data-[state=on]:bg-muted data-[state=on]:text-foreground data-[state=on]:shadow-sm"
                 >
                     <FileDown class="size-3.5" />
-                    Download
+                    {i18n.m.mode.download}
                 </ToggleGroupItem>
             </ToggleGroup>
 
             <!-- Target -->
             <div class="flex flex-col gap-3">
-                {@render groupLabel('Target')}
+                {@render groupLabel(i18n.m.config.groups.target)}
                 <div class="flex flex-col gap-1.5">
                     <Label for="source"
                         >{run.mode === 'search'
-                            ? 'Search Query'
+                            ? i18n.m.config.sourceLabel.query
                             : run.mode === 'download'
-                              ? 'Cache File'
-                              : 'Source URL'}</Label
+                              ? i18n.m.config.sourceLabel.cacheFile
+                              : i18n.m.config.sourceLabel.url}</Label
                     >
                     <div class="flex">
                         <Input
@@ -211,7 +213,7 @@
                 </div>
                 <div class="flex gap-3">
                     <div class="flex flex-2 flex-col gap-1.5">
-                        <Label for="output">Output Directory</Label>
+                        <Label for="output">{i18n.m.config.outputDir}</Label>
                         <div class="flex">
                             <Input
                                 id="output"
@@ -230,7 +232,7 @@
                     </div>
                     {#if showLimit}
                         <div class="flex flex-1 flex-col gap-1.5">
-                            <Label for="limit">Limit</Label>
+                            <Label for="limit">{i18n.m.config.num}</Label>
                             <NumberInput id="limit" bind:value={run.limit} min={1} max={5000} />
                         </div>
                     {/if}
@@ -239,18 +241,18 @@
 
             <!-- Extraction options -->
             <div class="flex flex-col gap-3">
-                {@render groupLabel('Extraction Options')}
+                {@render groupLabel(i18n.m.config.groups.extraction)}
                 <div class="flex flex-col gap-2">
                     <OptionRow
-                        title="Fetch Videos"
-                        desc="Download HLS video segments and mux to MP4."
+                        title={i18n.m.config.fetchVideos.title}
+                        desc={i18n.m.config.fetchVideos.desc}
                     >
                         <Switch bind:checked={run.fetchVideos} />
                     </OptionRow>
 
                     <OptionRow
-                        title="Minimum Resolution"
-                        desc="Discard assets smaller than dimensions (0 disables)."
+                        title={i18n.m.config.minResolution.title}
+                        desc={i18n.m.config.minResolution.desc}
                     >
                         <div class="flex items-center gap-2">
                             <NumberInput bind:value={run.resW} min={0} class="w-28" />
@@ -260,22 +262,28 @@
                     </OptionRow>
 
                     <OptionRow
-                        title="Metadata Strategy"
-                        desc="Format for accompanying alt text/captions."
+                        title={i18n.m.config.metadataStrategy.title}
+                        desc={i18n.m.config.metadataStrategy.desc}
                     >
                         <Select.Root type="single" bind:value={run.caption}>
                             <Select.Trigger class="w-[150px]">{captionLabel}</Select.Trigger>
                             <Select.Content>
                                 <Select.Group>
-                                    {#each captionItems as item (item.value)}
-                                        <Select.Item value={item.value} label={item.label} />
+                                    {#each captionValues as value (value)}
+                                        <Select.Item
+                                            {value}
+                                            label={i18n.m.config.captions[value]}
+                                        />
                                     {/each}
                                 </Select.Group>
                             </Select.Content>
                         </Select.Root>
                     </OptionRow>
 
-                    <OptionRow title="Strict Alt-Text" desc="Drop assets lacking valid captions.">
+                    <OptionRow
+                        title={i18n.m.config.strictAlt.title}
+                        desc={i18n.m.config.strictAlt.desc}
+                    >
                         <Switch bind:checked={run.strictAlt} />
                     </OptionRow>
                 </div>
@@ -284,13 +292,13 @@
             <!-- Metadata cache (scrape/search only; download mode already has the records) -->
             {#if run.mode !== 'download'}
                 <div class="flex flex-col gap-3">
-                    {@render groupLabel('Metadata Cache')}
+                    {@render groupLabel(i18n.m.config.groups.metadataCache)}
                     <div class="flex flex-col gap-2">
                         <OptionGroup>
                             <OptionRow
                                 flat
-                                title="Save Metadata Cache"
-                                desc="Write scraped records to a JSON file for reuse in Download mode."
+                                title={i18n.m.config.saveCache.title}
+                                desc={i18n.m.config.saveCache.desc}
                             >
                                 <Switch bind:checked={run.saveCache} />
                             </OptionRow>
@@ -298,7 +306,7 @@
                             {#if run.saveCache}
                                 <OptionGroupSub>
                                     <div class="flex flex-col gap-1.5 p-3">
-                                        <Label for="cachePath">Cache Path</Label>
+                                        <Label for="cachePath">{i18n.m.config.cachePath}</Label>
                                         <div class="flex">
                                             <Input
                                                 id="cachePath"
@@ -317,13 +325,13 @@
                                             </Button>
                                         </div>
                                         <p class="text-xs text-muted-foreground">
-                                            Follows the output directory until you change it.
+                                            {i18n.m.config.cachePathHint}
                                         </p>
                                     </div>
                                     <OptionRow
                                         flat
-                                        title="Skip Download"
-                                        desc="Save metadata only; don't download media."
+                                        title={i18n.m.config.skipDownload.title}
+                                        desc={i18n.m.config.skipDownload.desc}
                                     >
                                         <Switch bind:checked={run.skipDownload} />
                                     </OptionRow>
@@ -342,12 +350,12 @@
         {#if isRunning}
             <Button variant="destructive" onclick={terminate}>
                 <Square />
-                Terminate
+                {i18n.m.config.terminate}
             </Button>
         {:else}
             <Button onclick={execute}>
                 <Play />
-                Execute
+                {i18n.m.config.execute}
             </Button>
         {/if}
     </div>

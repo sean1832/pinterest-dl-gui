@@ -5,6 +5,7 @@
     import ConfigPanel from '$lib/components/ConfigPanel.svelte';
     import ConsolePanel from '$lib/components/ConsolePanel.svelte';
     import { onBridgeReady, getApi } from '$lib/api';
+    import { i18n } from '$lib/i18n/index.svelte';
 
     let coreVersion = $state('unknown');
     async function loadCoreVersion() {
@@ -103,12 +104,12 @@
         <div class="flex gap-2">
             <div class="flex items-center gap-2">
                 <span class="size-2 rounded-full bg-green-500"></span>
-                <span>READY</span>
+                <span>{i18n.m.statusBar.ready}</span>
             </div>
             |
             <div class="flex items-center gap-2">
                 <span class="size-2 rounded-full bg-green-500"></span>
-                <span>FFMPEG</span>
+                <span>{i18n.m.statusBar.ffmpeg}</span>
             </div>
         </div>
 

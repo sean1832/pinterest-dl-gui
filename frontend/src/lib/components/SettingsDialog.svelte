@@ -8,7 +8,9 @@
         type FfmpegStatus,
         type CookieStatus
     } from '$lib/state/settings.svelte';
+    import { i18n, setLocale, localeOptions, type Locale } from '$lib/i18n/index.svelte';
     import * as Dialog from '$lib/components/ui/dialog';
+    import * as Select from '$lib/components/ui/select';
     import { Button } from '$lib/components/ui/button';
     import { Input } from '$lib/components/ui/input';
     import { NumberInput } from '$lib/components/ui/number-input';
@@ -18,6 +20,7 @@
     import InfoTooltip from '$lib/components/info-tooltip.svelte';
     import TooltipButton from '$lib/components/tooltip-button.svelte';
     import Settings from '@lucide/svelte/icons/settings';
+    import Languages from '@lucide/svelte/icons/languages';
     import KeyRound from '@lucide/svelte/icons/key-round';
     import Film from '@lucide/svelte/icons/film';
     import Gauge from '@lucide/svelte/icons/gauge';
@@ -28,21 +31,32 @@
     import LoaderCircle from '@lucide/svelte/icons/loader-circle';
     import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
 
-    const statusMeta: Record<FfmpegStatus, { label: string; class: string }> = {
-        found: { label: 'Found', class: 'bg-success/10 text-success' },
-        missing: { label: 'Not found', class: 'bg-destructive/10 text-destructive' },
-        checking: { label: 'Checking', class: 'bg-muted text-muted-foreground' },
-        unknown: { label: 'Unknown', class: 'bg-muted text-muted-foreground' }
+    // Badge color per status; the label is localized (i18n.settings.ffmpegStatus/cookieStatus).
+    const ffmpegStatusClass: Record<FfmpegStatus, string> = {
+        found: 'bg-success/10 text-success',
+        missing: 'bg-destructive/10 text-destructive',
+        checking: 'bg-muted text-muted-foreground',
+        unknown: 'bg-muted text-muted-foreground'
     };
-    const status = $derived(statusMeta[settings.ffmpegStatus]);
+    const status = $derived({
+        label: i18n.m.settings.ffmpegStatus[settings.ffmpegStatus],
+        class: ffmpegStatusClass[settings.ffmpegStatus]
+    });
 
-    const cookieMeta: Record<CookieStatus, { label: string; class: string }> = {
-        valid: { label: 'Valid', class: 'bg-success/10 text-success' },
-        expired: { label: 'Expired', class: 'bg-destructive/10 text-destructive' },
-        checking: { label: 'Checking', class: 'bg-muted text-muted-foreground' },
-        unknown: { label: 'Unknown', class: 'bg-muted text-muted-foreground' }
+    const cookieStatusClass: Record<CookieStatus, string> = {
+        valid: 'bg-success/10 text-success',
+        expired: 'bg-destructive/10 text-destructive',
+        checking: 'bg-muted text-muted-foreground',
+        unknown: 'bg-muted text-muted-foreground'
     };
-    const cookie = $derived(cookieMeta[settings.cookieStatus]);
+    const cookie = $derived({
+        label: i18n.m.settings.cookieStatus[settings.cookieStatus],
+        class: cookieStatusClass[settings.cookieStatus]
+    });
+
+    const currentLocaleName = $derived(
+        localeOptions.find((o) => o.value === i18n.locale)?.name ?? i18n.locale
+    );
 
     function formatExpiry(unixSeconds: number): string {
         return new Date(unixSeconds * 1000).toLocaleDateString(undefined, {
@@ -109,33 +123,57 @@
         {#snippet child({ props })}
             <Button {...props} variant="outline" size="sm">
                 <Settings />
-                Settings
+                {i18n.m.settings.button}
             </Button>
         {/snippet}
     </Dialog.Trigger>
 
     <Dialog.Content class="sm:max-w-lg">
         <Dialog.Header>
-            <Dialog.Title>Settings</Dialog.Title>
-            <Dialog.Description>Global configuration shared across all modes.</Dialog.Description>
+            <Dialog.Title>{i18n.m.settings.title}</Dialog.Title>
+            <Dialog.Description>{i18n.m.settings.description}</Dialog.Description>
         </Dialog.Header>
 
         <div class="flex min-w-0 flex-col gap-6 text-xs">
+            <!-- Language -->
+            <section class="flex flex-col gap-3">
+                {@render sectionLabel(Languages, i18n.m.settings.sections.language)}
+                <div class="flex flex-col gap-1.5">
+                    <Label for="set-locale">{i18n.m.settings.language.label}</Label>
+                    <Select.Root
+                        type="single"
+                        value={i18n.locale}
+                        onValueChange={(value) => setLocale(value as Locale)}
+                    >
+                        <Select.Trigger id="set-locale" class="w-full">
+                            {currentLocaleName}
+                        </Select.Trigger>
+                        <Select.Content>
+                            <Select.Group>
+                                {#each localeOptions as option (option.value)}
+                                    <Select.Item value={option.value} label={option.name} />
+                                {/each}
+                            </Select.Group>
+                        </Select.Content>
+                    </Select.Root>
+                </div>
+            </section>
+
+            <Separator />
+
             <!-- Authentication -->
             <section class="flex flex-col gap-3">
-                {@render sectionLabel(KeyRound, 'Authentication')}
+                {@render sectionLabel(KeyRound, i18n.m.settings.sections.auth)}
                 <div class="flex flex-col gap-1.5">
                     <div class="flex items-center gap-1.5">
-                        <Label for="set-cookies">Session Cookies File</Label>
-                        <InfoTooltip
-                            text="Shared by Scrape and Search. Required only for private boards; public endpoints operate without session state."
-                        />
+                        <Label for="set-cookies">{i18n.m.settings.cookies.label}</Label>
+                        <InfoTooltip text={i18n.m.settings.cookies.tooltip} />
                     </div>
                     <div class="flex">
                         <Input
                             id="set-cookies"
                             bind:value={settings.cookies}
-                            placeholder="No file loaded"
+                            placeholder={i18n.m.settings.cookies.placeholder}
                             class="flex-1 rounded-r-none border-r-0 font-mono"
                         />
                         <Button
@@ -146,7 +184,7 @@
                             <FolderOpen />
                         </Button>
                         <TooltipButton
-                            tooltip="Capture a new cookies from Pinterest by logging in through an embedded browser window."
+                            tooltip={i18n.m.settings.cookies.captureTooltip}
                             variant="outline"
                             class="shrink-0 rounded-l-none"
                             onclick={captureCookies}
@@ -176,15 +214,17 @@
                             </Badge>
                             {#if settings.cookieStatus === 'expired'}
                                 <span class="text-destructive"
-                                    >Session expired - recapture to refresh.</span
+                                    >{i18n.m.settings.cookieMessage.expired}</span
                                 >
                             {:else if settings.cookieStatus === 'valid' && settings.cookieExpiry}
                                 <span class="text-muted-foreground"
-                                    >Valid until {formatExpiry(settings.cookieExpiry)}</span
+                                    >{i18n.m.settings.cookieMessage.validUntil(
+                                        formatExpiry(settings.cookieExpiry)
+                                    )}</span
                                 >
                             {:else if settings.cookieStatus === 'unknown'}
                                 <span class="text-muted-foreground"
-                                    >No expiry info - validity unknown.</span
+                                    >{i18n.m.settings.cookieMessage.unknownExpiry}</span
                                 >
                             {/if}
                         </div>
@@ -197,10 +237,8 @@
             <!-- Video / FFmpeg -->
             <section class="flex flex-col gap-3">
                 <div class="flex items-center gap-1.5">
-                    {@render sectionLabel(Film, 'Video / FFmpeg')}
-                    <InfoTooltip
-                        text="Required to remux HLS video into MP4. Without it, videos are saved as raw .ts segments."
-                    />
+                    {@render sectionLabel(Film, i18n.m.settings.sections.ffmpeg)}
+                    <InfoTooltip text={i18n.m.settings.ffmpeg.tooltip} />
                 </div>
                 <div
                     class="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3"
@@ -219,17 +257,17 @@
                                 {/if}
                                 {status.label}
                             </Badge>
-                            <span class="text-muted-foreground">FFmpeg</span>
+                            <span class="text-muted-foreground">{i18n.m.settings.ffmpeg.label}</span>
                         </div>
                         <span
                             class="truncate font-mono text-[11px] text-muted-foreground/70"
                             title={settings.ffmpegResolved}
                         >
-                            {settings.ffmpegResolved || 'Not resolved'}
+                            {settings.ffmpegResolved || i18n.m.settings.ffmpeg.notResolved}
                         </span>
                     </div>
                     <TooltipButton
-                        tooltip="Re-check FFmpeg availability"
+                        tooltip={i18n.m.settings.ffmpeg.recheckTooltip}
                         variant="outline"
                         size="sm"
                         class="shrink-0"
@@ -239,13 +277,13 @@
                     </TooltipButton>
                 </div>
                 <div class="flex flex-col gap-1.5">
-                    <Label for="set-ffmpeg">Custom FFmpeg Path</Label>
+                    <Label for="set-ffmpeg">{i18n.m.settings.ffmpeg.customPathLabel}</Label>
 
                     <div class="flex">
                         <Input
                             id="set-ffmpeg"
                             bind:value={settings.ffmpegPath}
-                            placeholder="Leave empty to use PATH"
+                            placeholder={i18n.m.settings.ffmpeg.customPathPlaceholder}
                             class="flex-1 rounded-r-none border-r-0 font-mono"
                         />
                         <Button
@@ -263,14 +301,12 @@
 
             <!-- Network -->
             <section class="flex flex-col gap-3">
-                {@render sectionLabel(Gauge, 'Network Defaults')}
+                {@render sectionLabel(Gauge, i18n.m.settings.sections.network)}
                 <div class="flex gap-3">
                     <div class="flex flex-1 flex-col gap-1.5">
                         <div class="flex items-center gap-1.5">
-                            <Label for="set-delay">Request Delay (s)</Label>
-                            <InfoTooltip
-                                text="Applied per request. Higher delay is gentler on Pinterest and reduces rate-limiting."
-                            />
+                            <Label for="set-delay">{i18n.m.settings.network.delay.label}</Label>
+                            <InfoTooltip text={i18n.m.settings.network.delay.tooltip} />
                         </div>
                         <NumberInput
                             id="set-delay"
@@ -281,10 +317,8 @@
                     </div>
                     <div class="flex flex-1 flex-col gap-1.5">
                         <div class="flex items-center gap-1.5">
-                            <Label for="set-timeout">Timeout (s)</Label>
-                            <InfoTooltip
-                                text="Maximum wait time per request before it is aborted. Applied to every run."
-                            />
+                            <Label for="set-timeout">{i18n.m.settings.network.timeout.label}</Label>
+                            <InfoTooltip text={i18n.m.settings.network.timeout.tooltip} />
                         </div>
                         <NumberInput
                             id="set-timeout"
@@ -296,10 +330,8 @@
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <div class="flex items-center gap-1.5">
-                        <Label for="set-max-workers">Max Concurrent Downloads</Label>
-                        <InfoTooltip
-                            text="How many files download in parallel. Higher is faster but higher risk of rate-limiting. (1-16, defaults to 8)"
-                        />
+                        <Label for="set-max-workers">{i18n.m.settings.network.maxWorkers.label}</Label>
+                        <InfoTooltip text={i18n.m.settings.network.maxWorkers.tooltip} />
                     </div>
                     <NumberInput
                         id="set-max-workers"
