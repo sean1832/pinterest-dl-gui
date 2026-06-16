@@ -66,8 +66,6 @@ function apply(event: RunEvent): void {
             runStatus.phase = event.phase;
             runStatus.current = event.current;
             runStatus.total = event.total;
-            // Downloaded tile is driven by download-phase progress; done reconciles it.
-            if (event.phase === "download") runStatus.counts.downloaded = event.current;
             break;
         case "log":
             runStatus.logs.push({
@@ -79,6 +77,8 @@ function apply(event: RunEvent): void {
             break;
         case "media":
             runStatus.previews.push({ thumbnail: event.thumbnail, isVideo: event.isVideo });
+            // One media event per successful download; skipped files emit none, so this stays exact.
+            runStatus.counts.downloaded += 1;
             if (event.isVideo) runStatus.counts.videos += 1;  // live tally as files download
             break;
         case "done":
