@@ -85,14 +85,23 @@ def run_download(
     download_videos: bool,
     skip_remux: bool,
     on_file_downloaded: Callable[[int, PinterestMedia], None],
+    on_file_failed: Callable[[int, PinterestMedia, Exception], None],
     should_cancel: Callable[[], bool],
 ) -> List[Path]:
-    """Download each scraped media in order, reporting and checking cancel between files."""
+    """Download each scraped media in order, reporting and checking cancel between files.
+
+    A single file failing (dead/stale Pinterest URL, network error) is reported via
+    on_file_failed and skipped, so one bad pin does not abort the whole batch.
+    """
     downloaded_paths: List[Path] = []
     for i, media in enumerate(media_list):
         if should_cancel():  # checked before each file -> Terminate stops within one item
             break
-        result = downloader.download(media, output_dir, download_videos, skip_remux)
+        try:
+            result = downloader.download(media, output_dir, download_videos, skip_remux)
+        except Exception as e:
+            on_file_failed(i, media, e)  # warn + advance progress, then move on
+            continue
         media.set_local_path(result)  # captioning reads local_path to find the saved file
         downloaded_paths.append(result)
         on_file_downloaded(i, media)  # drives download-phase progress + the live videos tally
