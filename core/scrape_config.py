@@ -12,6 +12,7 @@ class ScrapeConfig:
     delay: float
     download_streams: bool
     timeout: float = 10.0  # per-request timeout for both scrape and download
+    max_workers: int = 8  # concurrent download threads; clamped 1-16 at the API boundary
     ensure_alt: bool = False  # strict alt-text: drop assets lacking captions
     # How media is acquired: "scrape"/"search" hit Pinterest; "download" loads a previously
     # saved cache JSON whose path is carried in `url`.

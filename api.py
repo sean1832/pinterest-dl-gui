@@ -82,6 +82,10 @@ class Api:
 
         res_w, res_h = config["min_resolution"]  # JS sends [w, h]; unpack asserts length 2 at runt
 
+        # Cap concurrency at the boundary so a bad/forged payload can't spawn a thread storm
+        # (and going past the shared HTTP pool size of 10 only churns connections anyway).
+        max_workers = max(1, min(16, int(config.get("max_workers", 8))))
+
         scrape_config = ScrapeConfig(
             url=url,
             mode=mode,
@@ -90,6 +94,7 @@ class Api:
             min_resolution=(int(res_w), int(res_h)),
             delay=float(config["delay"]),
             timeout=float(config.get("timeout", 10.0)),
+            max_workers=max_workers,
             cookies=(str(config.get("cookies", "")).strip() or None),
             ensure_alt=bool(config.get("ensure_alt", False)),
             ffmpeg_path=(str(config.get("ffmpeg_path", "")).strip() or None),
@@ -244,26 +249,27 @@ class Api:
                 self._emit(events.log("info", f"Downloading {total} files to {config.output_dir}"))
                 self._emit(events.progress("download", 0, total))  # flip phase label to Downloading
 
-                # Progress current tracks items processed (index + 1) so the bar still reaches
-                # total when files are skipped; `downloaded` counts only successes.
-                def on_file_downloaded(index: int, media: PinterestMedia):
+                # `completed` is the running count of finished files (successes + failures), so
+                # the bar still reaches total when files are skipped; `downloaded` counts only
+                # successes. With concurrent downloads, callbacks fire in completion order.
+                def on_file_downloaded(completed: int, media: PinterestMedia):
                     nonlocal downloaded, videos
                     downloaded += 1
                     is_video_file = download_streams and media.video_stream is not None
                     if is_video_file:
                         videos += 1
-                    self._emit(events.progress("download", index + 1, total))
+                    self._emit(events.progress("download", completed, total))
                     # Preview the file just written to disk; a video stream has no still to show.
                     thumbnail = "" if is_video_file else thumbnail_data_uri(media.local_path)
                     self._emit(events.media(thumbnail, is_video_file))
 
-                def on_file_failed(index: int, media: PinterestMedia, exc: Exception):
+                def on_file_failed(completed: int, media: PinterestMedia, exc: Exception):
                     nonlocal failed
                     failed += 1
                     self._emit(
                         events.log("warn", f"Skipped {media.id}: {type(exc).__name__}: {exc}")
                     )
-                    self._emit(events.progress("download", index + 1, total))
+                    self._emit(events.progress("download", completed, total))
 
                 run_download(
                     media_list,
@@ -271,6 +277,7 @@ class Api:
                     Path(config.output_dir),
                     download_streams,
                     config.skip_remux,
+                    config.max_workers,
                     on_file_downloaded,
                     on_file_failed,
                     lambda: self._stop.is_set(),
