@@ -294,6 +294,21 @@
                         />
                     </div>
                 </div>
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-center gap-1.5">
+                        <Label for="set-max-workers">Max Concurrent Downloads</Label>
+                        <InfoTooltip
+                            text="How many files download in parallel. Higher is faster but higher risk of rate-limiting. (1-16, defaults to 8)"
+                        />
+                    </div>
+                    <NumberInput
+                        id="set-max-workers"
+                        bind:value={settings.maxWorkers}
+                        step={1}
+                        min={1}
+                        max={16}
+                    />
+                </div>
             </section>
         </div>
     </Dialog.Content>

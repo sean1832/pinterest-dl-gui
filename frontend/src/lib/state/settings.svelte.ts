@@ -12,6 +12,7 @@ interface Settings {
 	ffmpegResolved: string;
 	delay: number;
 	timeout: number;
+	maxWorkers: number; // concurrent download threads, clamped 1-16 by the Python boundary
 }
 
 const STORAGE_KEY = "pdl.settings";
@@ -25,6 +26,7 @@ export const settings = $state<Settings>({
 	ffmpegResolved: "",
 	delay: 0.2,
 	timeout: 10,
+	maxWorkers: 8,
 });
 
 // Restore durable fields synchronously at module init (before any component renders).
@@ -36,6 +38,7 @@ if (raw) {
 		if (typeof saved.ffmpegPath === "string") settings.ffmpegPath = saved.ffmpegPath;
 		if (typeof saved.delay === "number") settings.delay = saved.delay;
 		if (typeof saved.timeout === "number") settings.timeout = saved.timeout;
+		if (typeof saved.maxWorkers === "number") settings.maxWorkers = saved.maxWorkers;
 	} catch {
 		// Corrupt JSON in localStorage - keep defaults rather than failing startup.
 	}
@@ -50,6 +53,7 @@ $effect.root(() => {
 			ffmpegPath: settings.ffmpegPath,
 			delay: settings.delay,
 			timeout: settings.timeout,
+			maxWorkers: settings.maxWorkers,
 		};
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(durable));
 	});

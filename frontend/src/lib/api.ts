@@ -30,6 +30,7 @@ export interface RunPayload {
     min_resolution: [number, number];
     delay: number;
     timeout?: number;
+    max_workers?: number;
     cookies?: string;
     ensure_alt?: boolean;
     ffmpeg_path?: string;
