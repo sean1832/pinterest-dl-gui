@@ -14,6 +14,7 @@
     import { NumberInput } from '$lib/components/ui/number-input';
     import { Label } from '$lib/components/ui/label';
     import { Badge } from '$lib/components/ui/badge';
+    import { Separator } from '$lib/components/ui/separator';
     import InfoTooltip from '$lib/components/info-tooltip.svelte';
     import Settings from '@lucide/svelte/icons/settings';
     import KeyRound from '@lucide/svelte/icons/key-round';
@@ -189,6 +190,8 @@
                 </div>
             </section>
 
+            <Separator />
+
             <!-- Video / FFmpeg -->
             <section class="flex flex-col gap-3">
                 <div class="flex items-center gap-1.5">
@@ -252,6 +255,8 @@
                     </div>
                 </div>
             </section>
+
+            <Separator />
 
             <!-- Network -->
             <section class="flex flex-col gap-3">
