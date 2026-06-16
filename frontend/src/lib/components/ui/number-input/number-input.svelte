@@ -20,7 +20,7 @@
         step = 1,
         disabled = false,
         class: className,
-        id,
+        id
     }: Props = $props();
 
     function clamp(v: number): number {
@@ -70,7 +70,7 @@
             onclick={increment}
             disabled={disabled || atMax}
             tabindex="-1"
-            class="flex flex-1 w-5 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            class="cursor-pointer flex flex-1 w-5 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
         >
             <ChevronUp class="size-3" />
         </button>
@@ -80,7 +80,7 @@
             onclick={decrement}
             disabled={disabled || atMin}
             tabindex="-1"
-            class="flex flex-1 w-5 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            class="cursor-pointer flex flex-1 w-5 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
         >
             <ChevronDown class="size-3" />
         </button>
