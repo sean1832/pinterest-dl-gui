@@ -21,6 +21,21 @@ _base = _base_dir()
 if sys.platform == "win32":
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("pinterest-dl.gui")
 
+    # The windowed build has no console, so each ffmpeg child (spawned by pinterest_dl
+    # to remux videos) opens its own console window -- visible as flashing cmd windows,
+    # one per download worker. Default child processes to CREATE_NO_WINDOW so they stay
+    # hidden; callers that set their own creationflags are left untouched.
+    import subprocess
+
+    _orig_popen_init = subprocess.Popen.__init__
+
+    def _no_window_popen_init(self, *args, **kwargs):
+        if kwargs.get("creationflags", 0) == 0:
+            kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+        _orig_popen_init(self, *args, **kwargs)
+
+    subprocess.Popen.__init__ = _no_window_popen_init
+
 api = Api()
 window = webview.create_window(
     "Pinterest-dl",
