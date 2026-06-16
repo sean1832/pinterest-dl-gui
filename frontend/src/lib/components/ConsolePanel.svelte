@@ -10,7 +10,7 @@
 
     const tagClass: Record<string, string> = {
         SYS: 'bg-primary/10 text-primary',
-        DL: 'bg-success/10 text-success',
+        OK: 'bg-success/10 text-success',
         WARN: 'bg-warning/10 text-warning',
         ERR: 'bg-destructive/10 text-destructive'
     };
@@ -19,7 +19,7 @@
     function logTag(line: LogLine): string {
         if (line.level === 'error') return 'ERR';
         if (line.level === 'warn') return 'WARN';
-        if (line.phase === 'download') return 'DL';
+        if (line.phase === 'download') return 'OK';
         return 'SYS';
     }
 
