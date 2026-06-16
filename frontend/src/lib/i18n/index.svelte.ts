@@ -31,8 +31,9 @@ const LOCALE_KEY = "pdl.locale";
 
 function loadInitialLocale(): Locale {
 	const saved = localStorage.getItem(LOCALE_KEY);
-	// `in` confirms membership; the cast is safe because we just checked the key exists.
-	return saved !== null && saved in locales ? (saved as Locale) : "en";
+	if (saved !== null && saved in locales) return saved as Locale;
+	const sys = navigator.language.split("-")[0];
+	return sys in locales ? (sys as Locale) : "en";
 }
 
 function isMergeable(value: unknown): value is Record<string, unknown> {
