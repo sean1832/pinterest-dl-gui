@@ -1,6 +1,7 @@
 <script lang="ts">
     import { cn } from '$lib/utils';
     import { runStatus, type LogLine } from '$lib/state/runStatus.svelte';
+    import { i18n } from '$lib/i18n/index.svelte';
     import { Progress } from '$lib/components/ui/progress';
     import { Badge } from '$lib/components/ui/badge';
     import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -33,10 +34,12 @@
     );
 
     const phaseLabel = $derived.by(() => {
-        if (runStatus.status === 'idle') return 'Idle';
-        if (runStatus.status === 'done') return 'Done';
-        if (runStatus.status === 'error') return 'Error';
-        return runStatus.phase === 'download' ? 'Downloading' : 'Scraping';
+        if (runStatus.status === 'idle') return i18n.m.console.phase.idle;
+        if (runStatus.status === 'done') return i18n.m.console.phase.done;
+        if (runStatus.status === 'error') return i18n.m.console.phase.error;
+        return runStatus.phase === 'download'
+            ? i18n.m.console.phase.downloading
+            : i18n.m.console.phase.scraping;
     });
 </script>
 
@@ -52,10 +55,10 @@
             >
                 {#if savedOnly}
                     <Save class="size-3" />
-                    Saved
+                    {i18n.m.console.saved}
                 {:else}
                     <Download class="size-3" />
-                    Downloaded
+                    {i18n.m.console.downloaded}
                 {/if}
             </span>
         </div>
@@ -67,7 +70,7 @@
                 class="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
             >
                 <Film class="size-3" />
-                Videos
+                {i18n.m.console.videos}
             </span>
         </div>
     </div>
