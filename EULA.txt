@@ -1,0 +1,49 @@
+END USER LICENSE AGREEMENT
+
+Pinterest Downloader GUI
+
+PLEASE READ THIS AGREEMENT CAREFULLY BEFORE INSTALLING OR USING THIS SOFTWARE.
+By installing or using Pinterest Downloader GUI (the "Software"), you agree to
+be bound by the terms below. If you do not agree, do not install or use the
+Software.
+
+1. Purpose and Scope
+   The Software is an independent tool provided for educational and personal
+   use only. It is not affiliated with, endorsed by, or sponsored by Pinterest
+   or any of its subsidiaries or affiliates.
+
+2. Responsible Use
+   You are solely responsible for how you use the Software. You agree to use it
+   in compliance with all applicable laws and regulations and with the terms of
+   service of any website you access, including Pinterest's Terms of Service
+   (https://developers.pinterest.com/terms/). Automated scraping of a website
+   may conflict with its terms of service; it is your responsibility to verify
+   what you are permitted to do before doing it.
+
+3. Content and Intellectual Property
+   The Software may be used to download media and metadata. You are responsible
+   for ensuring that you have the right to access, download, store, and use any
+   content you obtain through the Software. The authors grant you no rights to
+   any third-party content.
+
+4. No Warranty
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+5. Limitation of Liability and Misuse
+   To the maximum extent permitted by applicable law, the authors and
+   contributors shall not be liable for any claim, damages, or other liability,
+   whether in an action of contract, tort, or otherwise, arising from, out of,
+   or in connection with the Software or the use of or other dealings in the
+   Software. The authors disclaim any and all responsibility for misuse of the
+   Software. You use it at your own legal risk.
+
+6. Source Code License
+   The Software's source code is licensed separately under the Apache License,
+   Version 2.0. This Agreement governs your use of the distributed application
+   and does not modify or replace the terms of the Apache License 2.0, a copy of
+   which is included with the Software (see the LICENSE file).
+
+By clicking "I accept" or by installing or using the Software, you acknowledge
+that you have read this Agreement and agree to be bound by its terms.
