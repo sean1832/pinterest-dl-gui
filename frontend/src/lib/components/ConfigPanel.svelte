@@ -106,6 +106,7 @@
             min_resolution: [run.resW, run.resH],
             delay: settings.delay,
             timeout: settings.timeout,
+            max_workers: settings.maxWorkers,
             cookies: settings.cookies,
             ensure_alt: run.strictAlt,
             ffmpeg_path: settings.ffmpegPath,

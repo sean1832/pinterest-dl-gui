@@ -10,7 +10,7 @@
 
     const tagClass: Record<string, string> = {
         SYS: 'bg-primary/10 text-primary',
-        DL: 'bg-success/10 text-success',
+        OK: 'bg-success/10 text-success',
         WARN: 'bg-warning/10 text-warning',
         ERR: 'bg-destructive/10 text-destructive'
     };
@@ -19,7 +19,7 @@
     function logTag(line: LogLine): string {
         if (line.level === 'error') return 'ERR';
         if (line.level === 'warn') return 'WARN';
-        if (line.phase === 'download') return 'DL';
+        if (line.phase === 'download') return 'OK';
         return 'SYS';
     }
 
@@ -112,20 +112,22 @@
     <!-- Log -->
     <ScrollArea class="min-h-0 flex-1">
         <div
-            class="flex flex-col gap-1 p-4 font-mono text-[11px] leading-relaxed text-muted-foreground"
+            class="flex flex-col gap-0.5 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground select-text"
         >
             {#each runStatus.logs as log, i (i)}
-                <div class="flex items-center gap-2">
-                    <time class="shrink-0 text-muted-foreground/60">{log.time}</time>
+                <div
+                    class="flex items-center gap-2 rounded px-1.5 py-0.5 transition-colors duration-75 hover:bg-muted/70"
+                >
+                    <time class="shrink-0 text-muted-foreground/60 select-none">{log.time}</time>
                     <Badge
                         class={cn(
-                            'h-4 shrink-0 border-transparent px-1 text-[10px]',
+                            'h-4 shrink-0 border-transparent px-1 text-[10px] select-none',
                             tagClass[logTag(log)]
                         )}
                     >
                         {logTag(log)}
                     </Badge>
-                    <span>{log.message}</span>
+                    <span class="break-all">{log.message}</span>
                 </div>
             {/each}
         </div>

@@ -82,6 +82,10 @@ class Api:
 
         res_w, res_h = config["min_resolution"]  # JS sends [w, h]; unpack asserts length 2 at runt
 
+        # Cap concurrency at the boundary so a bad/forged payload can't spawn a thread storm
+        # (and going past the shared HTTP pool size of 10 only churns connections anyway).
+        max_workers = max(1, min(16, int(config.get("max_workers", 8))))
+
         scrape_config = ScrapeConfig(
             url=url,
             mode=mode,
@@ -90,6 +94,7 @@ class Api:
             min_resolution=(int(res_w), int(res_h)),
             delay=float(config["delay"]),
             timeout=float(config.get("timeout", 10.0)),
+            max_workers=max_workers,
             cookies=(str(config.get("cookies", "")).strip() or None),
             ensure_alt=bool(config.get("ensure_alt", False)),
             ffmpeg_path=(str(config.get("ffmpeg_path", "")).strip() or None),
@@ -132,11 +137,13 @@ class Api:
             thumbnail_data_uri,
         )
 
+        self._emit(events.log("info", f"Starting run in '{config.mode}' mode..."))
         # Initialized up front so the cancel/except paths can report partial counts even if
         # never reach the download phase (media_list may not exists there)
         scraped = 0
         downloaded = 0
         videos = 0
+        failed = 0
         saved = 0
         try:
             with events.forward_logs(self._emit):
@@ -148,8 +155,13 @@ class Api:
                 if config.mode == "download":
                     if self._stop.is_set():
                         raise events.RunCancelled()
+                    self._emit(events.log("info", f"Loading cache file: {config.url}"))
                     media_list = load_cache(Path(config.url))
                     scraped = len(media_list)
+                    if scraped == 0:
+                        self._emit(events.log("warn", "Cache file contains no records."))
+                    else:
+                        self._emit(events.log("info", f"Loaded {scraped} records from cache."))
                 else:
                     scraper = PinterestDL.with_api(
                         timeout=config.timeout, ensure_alt=config.ensure_alt
@@ -158,6 +170,7 @@ class Api:
                     # raises here and surfaces as a run error rather than failing silently.
                     if config.cookies:
                         scraper.with_cookies_path(config.cookies)
+                        self._emit(events.log("info", f"Using cookies: {config.cookies}"))
 
                     def on_progress(media):
                         nonlocal scraped
@@ -167,11 +180,34 @@ class Api:
                         self._emit(events.progress("scrape", scraped, config.num))
 
                     if config.mode == "scrape":
+                        self._emit(
+                            events.log(
+                                "info", f"Scraping up to {config.num} items from {config.url}"
+                            )
+                        )
                         media_list = run_api_scrape(scraper, config, on_progress)
                     elif config.mode == "search":
+                        self._emit(
+                            events.log(
+                                "info", f"Searching '{config.url}' for up to {config.num} items"
+                            )
+                        )
                         media_list = run_api_search(scraper, config, on_progress)
                     else:
                         raise ValueError(f"Unsupported mode: {config.mode}")
+
+                    if scraped == 0:
+                        # The most common silent failure: bad URL/query, or missing/expired
+                        # cookies for a private board. Flag it instead of reporting a clean run.
+                        self._emit(
+                            events.log(
+                                "warn",
+                                "No media found. Check the URL/query, or your cookies for "
+                                "private boards.",
+                            )
+                        )
+                    else:
+                        self._emit(events.log("info", f"Scraped {scraped} media items."))
 
                     # === optionally persist the scraped records for later reuse ===
                     if config.save_cache:
@@ -206,21 +242,34 @@ class Api:
                             os.environ["PATH"] = (
                                 ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
                             )
+                            self._emit(events.log("info", f"Using ffmpeg: {ffmpeg['path']}"))
 
                 # === download phase ===
                 total = len(media_list)
+                self._emit(events.log("info", f"Downloading {total} files to {config.output_dir}"))
                 self._emit(events.progress("download", 0, total))  # flip phase label to Downloading
 
-                def on_file_downloaded(index: int, media: PinterestMedia):
+                # `completed` is the running count of finished files (successes + failures), so
+                # the bar still reaches total when files are skipped; `downloaded` counts only
+                # successes. With concurrent downloads, callbacks fire in completion order.
+                def on_file_downloaded(completed: int, media: PinterestMedia):
                     nonlocal downloaded, videos
-                    downloaded = index + 1
+                    downloaded += 1
                     is_video_file = download_streams and media.video_stream is not None
                     if is_video_file:
                         videos += 1
-                    self._emit(events.progress("download", downloaded, total))
+                    self._emit(events.progress("download", completed, total))
                     # Preview the file just written to disk; a video stream has no still to show.
                     thumbnail = "" if is_video_file else thumbnail_data_uri(media.local_path)
                     self._emit(events.media(thumbnail, is_video_file))
+
+                def on_file_failed(completed: int, media: PinterestMedia, exc: Exception):
+                    nonlocal failed
+                    failed += 1
+                    self._emit(
+                        events.log("warn", f"Skipped {media.id}: {type(exc).__name__}: {exc}")
+                    )
+                    self._emit(events.progress("download", completed, total))
 
                 run_download(
                     media_list,
@@ -228,11 +277,18 @@ class Api:
                     Path(config.output_dir),
                     download_streams,
                     config.skip_remux,
+                    config.max_workers,
                     on_file_downloaded,
+                    on_file_failed,
                     lambda: self._stop.is_set(),
                 )
                 if self._stop.is_set():  # cancelled between files
                     raise events.RunCancelled()
+
+                summary = f"Downloaded {downloaded} files ({videos} videos)"
+                if failed:
+                    summary += f", {failed} skipped"
+                self._emit(events.log("info", summary + "."))
 
                 # === captions: write sidecars / embed EXIF for the downloaded files ===
                 if config.caption != "none":
@@ -313,6 +369,7 @@ class Api:
             return {"success": False, "path": "", "message": "Save cancelled."}
 
         Path(target).write_text(json.dumps(cookies, indent=2), encoding="utf-8")
+        self._emit(events.log("info", f"Captured {len(cookies)} cookies and saved to {target}"))
         return {"success": True, "path": target, "message": f"Saved {len(cookies)} cookies."}
 
     def check_cookie_status(self, path: str) -> dict:

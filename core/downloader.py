@@ -1,4 +1,5 @@
 import base64
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -79,23 +80,55 @@ def load_cache(path: Path) -> List[PinterestMedia]:
 
 
 def run_download(
-    media_list: List[PinterestMedia],
+    media_list: Sequence[PinterestMedia],
     downloader: MediaDownloader,
     output_dir: Path,
     download_videos: bool,
     skip_remux: bool,
+    max_workers: int,
     on_file_downloaded: Callable[[int, PinterestMedia], None],
+    on_file_failed: Callable[[int, PinterestMedia, Exception], None],
     should_cancel: Callable[[], bool],
 ) -> List[Path]:
-    """Download each scraped media in order, reporting and checking cancel between files."""
+    """Download scraped media concurrently, reporting completions on the calling thread.
+
+    Downloads run on a thread pool, but callbacks fire here as futures complete, not in
+    worker threads -- so counter mutation and event emission stay single-threaded and need
+    no locks. `completed` is the running 1-based count, since completions arrive out of order.
+
+    A single file failing is reported via on_file_failed and skipped, so one bad pin does
+    not abort the batch. Cancellation drops un-started downloads; in-flight ones run to
+    completion since a blocking download can't be interrupted.
+    """
     downloaded_paths: List[Path] = []
-    for i, media in enumerate(media_list):
-        if should_cancel():  # checked before each file -> Terminate stops within one item
-            break
-        result = downloader.download(media, output_dir, download_videos, skip_remux)
-        media.set_local_path(result)  # captioning reads local_path to find the saved file
-        downloaded_paths.append(result)
-        on_file_downloaded(i, media)  # drives download-phase progress + the live videos tally
+    if not media_list:
+        return downloaded_paths
+
+    completed = 0
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_media = {
+            executor.submit(
+                downloader.download, media, output_dir, download_videos, skip_remux
+            ): media
+            for media in media_list
+        }
+        for future in as_completed(future_to_media):
+            if should_cancel():
+                # Drop everything not yet started; in-flight futures still finish as the
+                # `with` block waits on shutdown. cancel() is a no-op on running futures.
+                for pending in future_to_media:
+                    pending.cancel()
+                break
+            media = future_to_media[future]
+            completed += 1
+            try:
+                result = future.result()
+            except Exception as e:
+                on_file_failed(completed, media, e)  # warn + advance progress, then move on
+                continue
+            media.set_local_path(result)  # captioning reads local_path to find the saved file
+            downloaded_paths.append(result)
+            on_file_downloaded(completed, media)  # drives download progress + live videos tally
     return downloaded_paths
 
 
